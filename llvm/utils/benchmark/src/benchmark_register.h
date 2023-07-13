@@ -3,6 +3,10 @@
 
 #include <vector>
 
+// kevin: 2023/7/13
+#include <stddef.h>
+#include <limits.h>
+
 #include "check.h"
 
 template <typename T>
