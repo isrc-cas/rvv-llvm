@@ -20,112 +20,89 @@
 #include <experimental/simd>
 
 namespace ex = std::experimental::parallelism_v2;
-template <typename T>
-class zero_init {
+
+template <class T, class SimdAbi, std::size_t array_size>
+struct BroadCastHelper {
+  const std::array<T, array_size>& expected_value;
+
+  BroadCastHelper(const std::array<T, array_size>& value) : expected_value(value) {}
+
+  template <class U>
+  void operator()() const {
+    if constexpr (is_non_narrowing_convertible_v<U, T>) {
+      ex::simd<T, SimdAbi> simd_broadcast_from_vectorizable_type(static_cast<U>(3));
+      assert_simd_value_correct<array_size>(simd_broadcast_from_vectorizable_type, expected_value);
+    }
+  }
+};
+
+struct CheckSimdBroadcastCtorFromVectorizedType {
+  template <class T,class SimdAbi, std::size_t>
+  void operator()() {
+    constexpr std::size_t array_size = ex::simd_size_v<T, SimdAbi>;
+    std::array<T, array_size> expected_value;
+    std::fill(expected_value.begin(), expected_value.end(), 3);
+
+    types::for_each(arithmetic_no_bool_types(), BroadCastHelper<T, SimdAbi, array_size>(expected_value));
+  }
+};
+
+template <class T>
+class implicit_type {
   T val;
 
 public:
-  zero_init() : val(static_cast<T>(0)) {}
-  zero_init(T val) : val(val) {}
-  operator T&() { return val; }
+  implicit_type(T v) : val(v) {}
   operator T() const { return val; }
 };
 
-template <typename _Tp, typename SimdAbi, std::size_t array_size>
-struct BroadCastHelper {
-  const std::array<_Tp, array_size>& origin_value;
+struct CheckSimdBroadcastCtor {
+  template <class T,class SimdAbi, std::size_t>
+  void operator()() {
+    constexpr std::size_t array_size = ex::simd_size_v<T, SimdAbi>;
+    std::array<T, array_size> expected_value;
+    std::fill(expected_value.begin(), expected_value.end(), 3);
 
-  BroadCastHelper(const std::array<_Tp, array_size>& origin_value) : origin_value(origin_value) {}
+    implicit_type<T> implicit_convert_to_3(3);
+    ex::simd<T, SimdAbi> simd_broadcast_from_implicit_type(std::move(implicit_convert_to_3));
+    assert_simd_value_correct<array_size>(simd_broadcast_from_implicit_type, expected_value);
 
-  template <typename _Up>
+    ex::simd<T, SimdAbi> simd_broadcast_from_int(3);
+    assert_simd_value_correct<array_size>(simd_broadcast_from_int, expected_value);
+
+    if constexpr (std::is_unsigned_v<T>) {
+      ex::simd<T, SimdAbi> simd_broadcast_from_uint(3u);
+      assert_simd_value_correct<array_size>(simd_broadcast_from_uint, expected_value);
+    }
+  }
+};
+
+template <class T, class SimdAbi, std::size_t array_size>
+struct ConversionHelper {
+  const std::array<T, array_size>& expected_value;
+
+  ConversionHelper(const std::array<T, array_size>& value) : expected_value(value) {}
+
+  template <class U>
   void operator()() const {
-    if constexpr (sizeof(_Up) <= sizeof(_Tp)) {
-      ex::simd<_Tp, SimdAbi> expected_simd_from_vectorizable_type(static_cast<_Up>(3));
-      assert_simd_value_correct<array_size>(expected_simd_from_vectorizable_type, origin_value);
+    if constexpr (!std::is_same_v<U, T> && std::is_same_v<SimdAbi, ex::simd_abi::fixed_size<array_size>> &&
+                  is_non_narrowing_convertible_v<U, T>) {
+      ex::simd<U, SimdAbi> origin_simd([](U i) { return i; });
+      ex::simd<T, SimdAbi> simd_from_implicit_conversion(origin_simd);
+      assert_simd_value_correct<array_size>(simd_from_implicit_conversion, expected_value);
     }
   }
 };
 
-struct CheckBroadCastSimdCtorFromVectorizedType {
-  template <class TypeList, class _Tp, class SimdAbi, size_t array_size>
-  void check(const std::array<_Tp, array_size>& origin_value) {
-    types::for_each(TypeList{}, BroadCastHelper<_Tp, SimdAbi, array_size>(origin_value));
-  }
-
-  template <class _Tp, class SimdAbi, std::size_t>
+struct CheckConversionSimdCtor {
+  template <class T,class SimdAbi, std::size_t>
   void operator()() {
-    constexpr size_t array_size = ex::simd_size_v<_Tp, SimdAbi>;
-    std::array<_Tp, array_size> origin_value;
+    constexpr std::size_t array_size = ex::simd_size_v<T, SimdAbi>;
+    std::array<T, array_size> expected_value;
     for (size_t i = 0; i < array_size; ++i)
-      origin_value[i] = static_cast<_Tp>(3);
+      expected_value[i] = static_cast<T>(i);
 
-    if constexpr (std::is_floating_point_v<_Tp>)
-      check<types::floating_point_types, _Tp, SimdAbi, array_size>(origin_value);
-    else if constexpr (std::is_signed_v<_Tp>)
-      check<types::signed_integer_types, _Tp, SimdAbi, array_size>(origin_value);
-    else
-      check<types::unsigned_integer_types, _Tp, SimdAbi, array_size>(origin_value);
-  }
-};
-
-struct CheckBroadCastSimdCtor {
-  template <class _Tp, class SimdAbi, std::size_t>
-  void operator()() {
-    constexpr size_t array_size = ex::simd_size_v<_Tp, SimdAbi>;
-    std::array<_Tp, array_size> origin_value;
-    for (size_t i = 0; i < array_size; ++i)
-      origin_value[i] = static_cast<_Tp>(3);
-
-    zero_init<_Tp> implicit_convert_to_3(3);
-    ex::simd<_Tp, SimdAbi> expected_simd_from_implicit_convert(std::move(implicit_convert_to_3));
-    assert_simd_value_correct<array_size>(expected_simd_from_implicit_convert, origin_value);
-
-    int int_value_3 = 3;
-    ex::simd<_Tp, SimdAbi> expected_simd_from_int(std::move(int_value_3));
-    assert_simd_value_correct<array_size>(expected_simd_from_int, origin_value);
-
-    if constexpr (std::is_unsigned_v<_Tp>) {
-      unsigned int uint_value_3 = static_cast<unsigned int>(3);
-      ex::simd<_Tp, SimdAbi> expected_simd_from_uint(std::move(uint_value_3));
-      assert_simd_value_correct<array_size>(expected_simd_from_uint, origin_value);
-    }
-  }
-};
-
-template <typename _Tp, typename SimdAbi, std::size_t _Np>
-struct FixedSimdForEachHelper {
-  static constexpr size_t array_size = ex::simd_size_v<_Tp, SimdAbi>;
-
-  template <typename _Up>
-  void operator()() const {
-    if constexpr (sizeof(_Tp) >= sizeof(_Up)) {
-      ex::simd<_Up, SimdAbi> origin_simd([](_Up i) { return i; });
-      ex::simd<_Tp, SimdAbi> convert_from_other_simd(origin_simd);
-      std::array<_Up, array_size> expected_value;
-      for (size_t i = 0; i < array_size; i++)
-        expected_value[i] = static_cast<_Up>(i);
-
-      assert_simd_value_correct<array_size, _Up>(convert_from_other_simd, expected_value);
-    }
-  }
-};
-
-struct CheckFixedSimdCtor {
-  template <class TypeList, class _Tp, class SimdAbi, std::size_t _Np>
-  void check() {
-    types::for_each(TypeList{}, FixedSimdForEachHelper<_Tp, SimdAbi, _Np>());
-  }
-
-  template <class _Tp, class SimdAbi, std::size_t _Np>
-  void operator()() {
-    if constexpr (std::is_same_v<SimdAbi, ex::simd_abi::fixed_size<_Np>>) {
-      if constexpr (std::is_floating_point_v<_Tp>)
-        check<types::floating_point_types, _Tp, SimdAbi, _Np>();
-      else if constexpr (std::is_signed_v<_Tp>)
-        check<types::signed_integer_types, _Tp, SimdAbi, _Np>();
-      else
-        check<types::unsigned_integer_types, _Tp, SimdAbi, _Np>();
-    }
+    types::for_each(arithmetic_no_bool_types(), ConversionHelper<T, SimdAbi, array_size>(expected_value));
   }
 };
 
@@ -194,9 +171,9 @@ void test_simd_abi() {
 }
 
 int main(int, char**) {
-  test_all_simd_abi<CheckBroadCastSimdCtorFromVectorizedType>();
-  test_all_simd_abi<CheckBroadCastSimdCtor>();
-  test_all_simd_abi<CheckFixedSimdCtor>();
+  test_all_simd_abi<CheckSimdBroadcastCtorFromVectorizedType>();
+  test_all_simd_abi<CheckSimdBroadcastCtor>();
+  test_all_simd_abi<CheckConversionSimdCtor>();
   test_all_simd_abi<CheckGenerateSimdCtor>();
   test_all_simd_abi<CheckLoadSimdCtor>();
   return 0;

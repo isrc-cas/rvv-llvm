@@ -113,4 +113,11 @@ constexpr size_t next_pow2(size_t v) noexcept {
   v++;
   return v;
 }
+
+template <class From, class To, class = void>
+inline constexpr bool is_non_narrowing_convertible_v = false;
+
+template <class From, class To>
+inline constexpr bool is_non_narrowing_convertible_v<From, To, std::void_t<decltype(To{std::declval<From>()})>> = true;
+
 #endif // TEST_UTIL_H

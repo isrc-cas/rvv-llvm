@@ -1851,7 +1851,7 @@ public:
   // implicit type conversion constructor
   template <class _Up,
             class = std::enable_if_t<std::is_same_v<abi_type, simd_abi::fixed_size<size()>> &&
-                                     __is_non_narrowing_arithmetic_convertible<_Up, value_type>()>>
+                                     __is_non_narrowing_convertible_v<_Up, value_type>>>
   _LIBCPP_HIDE_FROM_ABI simd(const simd<_Up, simd_abi::fixed_size<size()>>& __v) {
     for (size_t __i = 0; __i < size(); __i++) {
       (*this)[__i] = static_cast<_Tp>(__v[__i]);

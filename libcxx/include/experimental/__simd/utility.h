@@ -65,18 +65,12 @@ _LIBCPP_HIDE_FROM_ABI constexpr decltype(_To{std::declval<_From>()}, true) __is_
   return true;
 }
 
-template <class _To>
-_LIBCPP_HIDE_FROM_ABI constexpr bool __is_non_narrowing_convertible_impl(...) {
-  return false;
-}
+template <class _From, class _To, class = void>
+inline constexpr bool __is_non_narrowing_convertible_v = false;
 
 template <class _From, class _To>
-_LIBCPP_HIDE_FROM_ABI constexpr bool __is_non_narrowing_arithmetic_convertible() {
-  if constexpr (is_arithmetic_v<_To> && is_arithmetic_v<_From>)
-    return std::experimental::parallelism_v2::__is_non_narrowing_convertible_impl<_To>(_From{});
-  else
-    return false;
-}
+inline constexpr bool __is_non_narrowing_convertible_v<_From, _To, std::void_t<decltype(_To{std::declval<_From>()})>> =
+    true;
 
 template <class _Tp, class... _Args>
 _LIBCPP_HIDE_FROM_ABI constexpr _Tp __variadic_sum(_Args... __args) {
@@ -90,7 +84,7 @@ _LIBCPP_HIDE_FROM_ABI constexpr bool __is_vectorizable() {
 
 template <class _Tp, class _Up>
 _LIBCPP_HIDE_FROM_ABI constexpr bool __can_broadcast() {
-  return (is_arithmetic_v<_Up> && __is_non_narrowing_arithmetic_convertible<_Up, _Tp>()) ||
+  return (is_arithmetic_v<_Up> && __is_non_narrowing_convertible_v<_Up, _Tp>) ||
          (!is_arithmetic_v<_Up> && is_convertible_v<_Up, _Tp>) || is_same_v<remove_const_t<_Up>, int> ||
          (is_same_v<remove_const_t<_Up>, unsigned int> && is_unsigned_v<_Tp>);
 }
