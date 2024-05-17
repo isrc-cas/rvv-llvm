@@ -295,6 +295,13 @@ void VectorPredicationPass::transformCandidateVectorOperations(
         // Ignore the select: the vector length operand already takes care of
         // keeping track of the active elements.
         I->replaceAllUsesWith(I->getOperand(1));
+        // If a select instruction is to be deleted, replace
+        // its uses as mask in VecOpsToTransform as well.
+        for (auto Iter = BBInfo.VecOpsToTransform.begin();
+             Iter != BBInfo.VecOpsToTransform.end(); ++Iter) {
+          if (Iter->second.first == I)
+            Iter->second.first = I->getOperand(1);
+        }
         OldInstructionsToRemove.insert(std::make_pair(I, nullptr));
 
         continue;
