@@ -12,7 +12,9 @@
 
 #define __cpp_lib_experimental_parallel_simd 201803
 #include <iostream>
+#include <assert.h>
 #include <cmath>
+#include <iomanip>
 /*
     experimental/simd synopsis
 
@@ -715,7 +717,7 @@ _LIBCPP_PUSH_MACROS
 
 _LIBCPP_BEGIN_NAMESPACE_EXPERIMENTAL_SIMD
 
-#if _LIBCPP_STD_VER >= 17
+// #if _LIBCPP_STD_VER >= 17
 
 // TODO: handle _LIBCPP_HAS_NO_VECTOR_EXTENSION
 
@@ -2173,12 +2175,35 @@ T2 s2v(T1 x){
 
 template <class Abi>
 floatv<Abi> fma(floatv<Abi> x, floatv<Abi> y, floatv<Abi> z){
-  return x * y + z;
+  // return (x * y) + z;
+  floatv<Abi> res;
+  for (size_t i = 0; i < x.size(); i++)
+  {
+    res[i] = x[i] * y[i] + z[i];
+  }
+  return res;
 }
 
 template <class Abi>
 doublev<Abi> fma(doublev<Abi> x, doublev<Abi> y, doublev<Abi> z){
-  return x * y + z;
+  // return (x * y) + z;
+  doublev<Abi> res;
+  for (size_t i = 0; i < x.size(); i++)
+  {
+    res[i] = x[i] * y[i] + z[i];
+  }
+  return res;
+}
+
+template <class Abi>
+ldoublev<Abi> fma(ldoublev<Abi> x, ldoublev<Abi> y, ldoublev<Abi> z){
+  // return (x * y) + z;
+  ldoublev<Abi> res;
+  for (size_t i = 0; i < x.size(); i++)
+  {
+    res[i] = x[i] * y[i] + z[i];
+  }
+  return res;
 }
 
 template<typename T>
@@ -2324,11 +2349,12 @@ template <class Abi> ldoublev<Abi> rint(ldoublev<Abi> x){
   return res;
 }
 #else
-template <class Abi> ldoublev<Abi> rint(ldoublev<Abi> x)
+template <class Abi> ldoublev<Abi> rint(ldoublev<Abi> x, ldoublev<Abi> y)
 {
-  doublev<Abi> src1, dst;
+  doublev<Abi> src1, src2, dst;
   src1 = static_simd_cast<doublev<Abi>>(x);
-  dst = rint(src1);
+  src2 = static_simd_cast<doublev<Abi>>(y);
+  dst = rint(src1, src2);
   return static_simd_cast<ldoublev<Abi>>(dst);
 }
 #endif
@@ -2444,7 +2470,7 @@ static const double __asin_data[] =
 
 #define Top54Maskf 0xfffffffffffffc00
 
-#define ASCTH_NAN 1073741824.0
+#define ASCTH_NAN 1073741824.0F
 
 // double
 #define InvLn2_ha 92.33248261689366    // =1/ln2*64
@@ -7930,23 +7956,25 @@ uintv<Abi> GET_DOUBLE_SIGN(ulongv<Abi> tmp)
         (d) = iw_u.f;             \
     } while (0)
 
+
 // #define GET_FLOAT_WORD(i, d)        \
 //     do                              \
 //     {                               \
-//         Perf_32suf gf_u; 			\
+//         llvm_32suf gf_u; 			\
 //         gf_u.f = (d);           	\
 //         (i) = gf_u.u;            	\
 //     } while (0)
 
-// /* Set a float from a 32 bit int.  */
+/* Set a float from a 32 bit int.  */
 
 // #define SET_FLOAT_WORD(d, i)        \
 //     do                              \
 //     {                               \
-//         Perf_32suf sf_u; 			\
+//         llvm_32suf sf_u; 			\
 //         sf_u.u = (i);            	\
 //         (d) = sf_u.f;           	\
 //     } while (0)
+
 
 
 
@@ -8189,8 +8217,7 @@ template <class Abi> ldoublev<Abi> scalbn(ldoublev<Abi> x, samesize<int, ldouble
 #else
 template <class Abi> ldoublev<Abi> scalbn(ldoublev<Abi> x, samesize<int, ldoublev<Abi>> y)
 {
-  doublev<Abi> src1, dst;
-  samesize<int, ldoublev<Abi>> src2;
+  doublev<Abi> src1, src2, dst;
   src1 = static_simd_cast<doublev<Abi>>(x);
   src2 = static_simd_cast<samesize<int, doublev<Abi>>>(y);
   dst = scalbn(src1, src2);
@@ -8268,8 +8295,7 @@ template <class Abi> ldoublev<Abi> scalbln(ldoublev<Abi> x, samesize<long int, l
 #else
 template <class Abi> ldoublev<Abi> scalbln(ldoublev<Abi> x, samesize<long int, ldoublev<Abi>> y)
 {
-  doublev<Abi> src1, dst;
-  samesize<long int, ldoublev<Abi>> src2;
+  doublev<Abi> src1, src2, dst;
   src1 = static_simd_cast<doublev<Abi>>(x);
   src2 = static_simd_cast<samesize<long int, doublev<Abi>>>(y);
   dst = scalbln(src1, src2);
@@ -8278,28 +8304,124 @@ template <class Abi> ldoublev<Abi> scalbln(ldoublev<Abi> x, samesize<long int, l
 #endif
 
 
+template <class Abi> floatv<Abi> modf(floatv<Abi> x, floatv<Abi>* iptr){
+  floatv<Abi> res;
+  Abi_32suf<Abi> u, u1;
+  
+  u.f = x;
+  u1.f = x;
+  u1.u &= 0x80000000U;
+	uintv<Abi> mask;
+	intv<Abi> e = static_simd_cast<intv<Abi>>(u.u>>23 & 0xffU) - 0x7f;
+	mask = 0x007fffffU >> static_simd_cast<uintv<Abi>>(e);
 
+  auto jd1 = simd_mask<float, Abi>((u.u & mask) == 0);
+  auto jd2 = simd_mask<float, Abi>(e < 0);
+  auto jd3 = simd_mask<float, Abi>(e >= 23);
+	u.u &= ~mask;
+	*iptr = u.f;
+	res = x - u.f;
 
-template <class Abi> floatv<Abi> modf(floatv<Abi> value, floatv<Abi>* iptr){
-  *iptr = vld1q_f<floatv<Abi>, intv<Abi>>(value);
-  return value - (*iptr);
+  where(jd1, *iptr) = x;
+  where(jd1, res) = u1.f;
+  where(jd2, *iptr) = u1.f;
+  where(jd2, res) = x;
+  where(jd3, *iptr) = x;
+  where(jd3, res) = u1.f;
+  where(jd3 && isnan(x), res) = x;
+
+  return res; 
 }
-template <class Abi> doublev<Abi> modf(doublev<Abi> value, doublev<Abi>* iptr){
-  *iptr = vld1q_f<doublev<Abi>, longv<Abi>>(value);
-  return value - (*iptr);
+template <class Abi> doublev<Abi> modf(doublev<Abi> x, doublev<Abi>* iptr){
+  doublev<Abi> res;
+  Abi_64suf<Abi> u, u1;
+  
+  u.f = x;
+  u1.f = x;
+  u1.u &= 1UL<<63;
+	ulongv<Abi> mask;
+	intv<Abi> e = static_simd_cast<intv<Abi>>(u.u>>52 & 0x7ffU) - 0x3ff;
+	mask = -1UL>>12>> static_simd_cast<ulongv<Abi>>(e);
+
+  auto jd1 = simd_mask<double, Abi>((u.u & mask) == 0);
+  auto jd2 = simd_mask<double, Abi>(e < 0);
+  auto jd3 = simd_mask<double, Abi>(e >= 52);
+	u.u &= ~mask;
+	*iptr = u.f;
+	res = x - u.f;
+
+  where(jd1, *iptr) = x;
+  where(jd1, res) = u1.f;
+  where(jd2, *iptr) = u1.f;
+  where(jd2, res) = x;
+  where(jd3, *iptr) = x;
+  where(jd3, res) = u1.f;
+  where(jd3 && isnan(x), res) = x;
+
+  return res; 
 }
-template <class Abi> ldoublev<Abi> modf(ldoublev<Abi> value, ldoublev<Abi>* iptr){
-  *iptr = vld1q_f<ldoublev<Abi>, int128v<Abi>>(value);
-  return value - (*iptr);
+
+template <class Abi> ldoublev<Abi> modf(ldoublev<Abi> x, ldoublev<Abi>* iptr){
+  ldoublev<Abi> res, absx, y;
+  Abi_128suf<Abi> u, u1;
+  __uint128_t tmp = 0x1;
+  static const long double toint = 1/LDBL_EPSILON;
+  
+  u.f = x;
+  u1.f = x;
+  u1.u &= tmp << 127;
+	intv<Abi> e = static_simd_cast<intv<Abi>>((GET_LONGDOUBLE_SE(u.u))& 0x7fffU) - 0x3fff;
+  auto jd0 = simd_mask<long double, Abi>((u1.u >> 127) == 0);
+	where(jd0, absx) = x;
+	where(!jd0, absx) = -x;
+  y = absx + toint - toint - absx;  
+  
+  auto jd1 = simd_mask<long double, Abi>((y) == 0);
+  auto jd2 = simd_mask<long double, Abi>(e < 0);
+  auto jd3 = simd_mask<long double, Abi>(e >= LDBL_MANT_DIG-1);
+	
+	where(y>0, y) = y-1;
+	where(!jd0, y) = -y;
+  *iptr = x + y;
+  res = -y;
+
+  where(jd1, *iptr) = x;
+  where(jd1, res) = u1.f;
+  where(jd2, *iptr) = u1.f;
+  where(jd2, res) = x;
+  where(jd3, *iptr) = x;
+  where(jd3, res) = u1.f;
+  where(jd3 && isnan(x), res) = x;
+
+  return res;
 }
+
 
 template <class Abi> floatv<Abi>
-frexp(floatv<Abi> value, samesize<int, floatv<Abi>>* exp){
-  Abi_32suf<Abi> ux, umantissa;
-  ux.f = value;
-  umantissa.u = (ux.u & FrexpExponetMaskf) + HalfOnef_N;
-  *exp = static_simd_cast<samesize<int, floatv<Abi>>>(((ux.u >> 23) & ExponetBitsf) - 0x7e);
-  return umantissa.f;
+frexp(floatv<Abi> x, samesize<int, floatv<Abi>>* exp){
+  static float two25 =  3.3554432000e+07f;
+  uintv<Abi> hx,ix;
+  Abi_32suf<Abi> ux;
+  floatv<Abi> res;
+  ux.f = x;
+  hx = ux.u;
+	ix = 0x7fffffffU&hx;
+	*exp = 0;
+  auto jd = simd_mask<uint32_t, Abi>(ix<0x00800000U);
+  where(jd, x) = x * two25;
+  ux.f = x;
+  where(jd, hx) = ux.u;
+  where(jd, ix) = hx&0x7fffffff;
+  where(jd, *exp) = *exp - 25;
+	*exp += static_simd_cast<samesize<int, floatv<Abi>>>(static_simd_cast<intv<Abi>>(ix>>23)-126);
+	hx = (hx&0x807fffffU)|0x3f000000U;
+  ux.u = hx;
+	res = ux.f;
+  auto jd2 = simd_mask<float, Abi>(ix>=0x7f800000||(ix==0)); 
+  where(jd2, res) = x + x;
+  where(jd2, *exp) = 0;
+
+  return res;
 }
 
 template <class Abi> doublev<Abi> frexp(doublev<Abi> value, samesize<int, doublev<Abi>>* exp)
@@ -8367,11 +8489,54 @@ template <class Abi> ldoublev<Abi> frexp(ldoublev<Abi> x, samesize<int, ldoublev
 }
 #endif
 
+
+union _float_long
+{
+    float f;
+    long l;
+};
+
+float ldexpfff(float x, int pw2)
+{
+    union _float_long fl;
+    long e;
+
+    fl.f = x;
+
+    e = (fl.l >> 23) & 0x000000ff;
+    e += pw2;
+    fl.l = ((e & 0xff) << 23) | (fl.l & 0x807fffff);
+
+    return (fl.f);
+}
+
 template <class Abi>
-floatv<Abi> ldexp(floatv<Abi> x, samesize<int, floatv<Abi>> exp) {
-  Abi_32suf<Abi> ux;
-  ux.f = x;
-  ux.u = ux.u + static_simd_cast<uintv<Abi>>(exp << 23);
+floatv<Abi> ldexp(floatv<Abi> x, samesize<int, floatv<Abi>> n) {
+  Abi_32suf<Abi> ux, uxt;
+  Abi_64suf<Abi> ut;
+
+  doublev<Abi> nd = static_simd_cast<doublev<Abi>>(n);
+  nd += 211106232532992.0;
+  ut.f = nd;
+  ut.i = (ut.i >> 5) << 52;
+  ut.i = ut.i + 0x3ff0000000000000;
+  ux.f = x * static_simd_cast<floatv<Abi>>(ut.f);
+
+  floatv<Abi> nf = static_simd_cast<floatv<Abi>>(n);
+  auto jdt1 = (nf > 1024.f);
+  auto jdt2 = (nf < -1023.f);
+
+  where(jdt1, ux.f) = LLVM_INF_32F;
+  where(jdt2, ux.f) = 0;
+  where((jdt1 || jdt2), ux.f) = -ux.f;
+
+  uxt.f = x;
+  uxt.u = uxt.u & 0x7fffffff;
+  auto jd1 = uxt.u == 0x7f800000;
+  auto jd2 = uxt.u == 0x0;
+  auto jd3 = x == x;
+  where(change_simd_mask_type<unsigned int, float, Abi>(jd1 || jd2) || !jd3, ux.f) = x;
+
   return ux.f;
 }
 template <class Abi> doublev<Abi> ldexp(doublev<Abi> x, samesize<int, doublev<Abi>> n) 
@@ -8408,6 +8573,15 @@ floatv<Abi> floor(floatv<Abi> x) {
   intv<Abi> xi = static_simd_cast<intv<Abi>>(x);
   floatv<Abi> fx = static_simd_cast<floatv<Abi>>(xi);
   where(x<0&&fx<=0, fx) = fx-1;
+
+  intv<Abi> j0;
+  Abi_32suf<Abi> ux;
+  ux.f = x;
+  j0 = static_simd_cast<intv<Abi>>((ux.u>>23)&0xff)-0x7f;
+  auto jd1 = simd_mask<float, Abi>(j0 >= 23);
+  where(jd1, fx) = x;
+  where(jd1 && change_simd_mask_type<int, float, Abi>(j0 == 0x80), fx) = x + x;
+  return fx;
   return fx;
 }
 template <class Abi>
@@ -8415,6 +8589,14 @@ doublev<Abi> floor(doublev<Abi> x) {
   longv<Abi> xi = static_simd_cast<longv<Abi>>(x);
   doublev<Abi> dx = static_simd_cast<doublev<Abi>>(xi);
   where(x<0 && dx<=0, dx) = dx-1;
+
+  intv<Abi> j0;
+  Abi_64suf<Abi> ux;
+  ux.f = x;
+  j0 = static_simd_cast<intv<Abi>>((ux.u>>52)&0x7ff)-0x3ff;
+  auto jd1 = simd_mask<double, Abi>(j0 >= 52);
+  where(jd1, dx) = x;
+  where(jd1 && change_simd_mask_type<int, double, Abi>(j0 == 0x400), dx) = x + x;
   return dx;
 }
 
@@ -8423,6 +8605,14 @@ ldoublev<Abi> floor(ldoublev<Abi> x){
   longv<Abi> xi = static_simd_cast<longv<Abi>>(x);
   ldoublev<Abi> ldx = static_simd_cast<ldoublev<Abi>>(xi);
   where(x<0&&ldx<=0, ldx) = ldx-1;
+
+  longv<Abi> j0;
+  Abi_128suf<Abi> ux;
+  ux.f = x;
+  j0 = static_simd_cast<intv<Abi>>((GET_LONGDOUBLE_HI(ux.u)>>48)&0x7fff)-0x3fff;
+  auto jd1 = simd_mask<long double, Abi>(j0 >= 111);
+  where(jd1, ldx) = x;
+  where(jd1 && change_simd_mask_type<int64_t, long double, Abi>(j0 == 0x4000), ldx) = x + x;
   return ldx;
 }
 
@@ -8431,6 +8621,14 @@ floatv<Abi> ceil(floatv<Abi> x) {
   intv<Abi> xi = static_simd_cast<intv<Abi>>(x);
   floatv<Abi> fx = static_simd_cast<floatv<Abi>>(xi);
   where(x>0&&fx>=0, fx) = fx+1;
+
+  intv<Abi> j0;
+  Abi_32suf<Abi> ux;
+  ux.f = x;
+  j0 = static_simd_cast<intv<Abi>>((ux.u>>23)&0xff)-0x7f;
+  auto jd1 = simd_mask<float, Abi>(j0 >= 23);
+  where(jd1, fx) = x;
+  where(jd1 && change_simd_mask_type<int, float, Abi>(j0 == 0x80), fx) = x + x;
   return fx;
 }
 template <class Abi>
@@ -8438,6 +8636,14 @@ doublev<Abi> ceil(doublev<Abi> x) {
   longv<Abi> xi = static_simd_cast<longv<Abi>>(x);
   doublev<Abi> dx = static_simd_cast<doublev<Abi>>(xi);
   where(x>0&&dx>=0, dx) = dx+1;
+
+  intv<Abi> j0;
+  Abi_64suf<Abi> ux;
+  ux.f = x;
+  j0 = static_simd_cast<intv<Abi>>((ux.u>>52)&0x7ff)-0x3ff;
+  auto jd1 = simd_mask<double, Abi>(j0 >= 52);
+  where(jd1, dx) = x;
+  where(jd1 && change_simd_mask_type<int, double, Abi>(j0 == 0x400), dx) = x + x;
   return dx;
 }
 
@@ -8446,6 +8652,14 @@ ldoublev<Abi> ceil(ldoublev<Abi> x){
   longv<Abi> xi = static_simd_cast<longv<Abi>>(x);
   ldoublev<Abi> ldx = static_simd_cast<ldoublev<Abi>>(xi);
   where(x>0&&ldx>=0, ldx) = ldx+1;
+
+  longv<Abi> j0;
+  Abi_128suf<Abi> ux;
+  ux.f = x;
+  j0 = static_simd_cast<intv<Abi>>((GET_LONGDOUBLE_HI(ux.u)>>48)&0x7fff)-0x3fff;
+  auto jd1 = simd_mask<long double, Abi>(j0 >= 111);
+  where(jd1, ldx) = x;
+  where(jd1 && change_simd_mask_type<int64_t, long double, Abi>(j0 == 0x4000), ldx) = x + x;
   return ldx;
 }
 
@@ -9300,11 +9514,12 @@ template <class Abi> ldoublev<Abi> exp(ldoublev<Abi> x)
   return x;
 }
 #else
-template <class Abi> ldoublev<Abi> exp(ldoublev<Abi> x)
+template <class Abi> ldoublev<Abi> exp(ldoublev<Abi> x, ldoublev<Abi> y)
 {
-  doublev<Abi> src1, dst;
+  doublev<Abi> src1, src2, dst;
   src1 = static_simd_cast<doublev<Abi>>(x);
-  dst = exp(src1);
+  src2 = static_simd_cast<doublev<Abi>>(y);
+  dst = exp(src1, src2);
   return static_simd_cast<ldoublev<Abi>>(dst);
 }
 #endif
@@ -9592,7 +9807,7 @@ template <class Abi> ldoublev<Abi> log(ldoublev<Abi> x)
 
 template <class Abi>
 floatv<Abi> log1p(floatv<Abi> x){
-  floatv<Abi> p, k;
+  floatv<Abi> p, k, res;
   intv<Abi> k_scale;
   Abi_32suf<Abi> ux, um, us;
 
@@ -9619,7 +9834,13 @@ floatv<Abi> log1p(floatv<Abi> x){
   m8 = m4 * m4;
   p = m8 * p_79 + p_06;
   k = static_simd_cast<floatv<Abi>>(k_scale >> 23);
-  return k * (float)Ln2 + p;
+  res = k * (float)Ln2 + p;
+
+  uintv<Abi> vect_xu12 = (ux.u & 0x7fffffffU)>>20;
+  where((ux.u == 0xff800000U) | (vect_xu12 >= 0x7f8) | change_simd_mask_type<float, uint32_t, Abi>(x < -1), res) = LLVM_NAN_32F;
+  where(ux.u == 0xbf800000U, res) = -LLVM_INF_32F;
+  where(ux.u == 0x7f800000U, res) = x;
+  return res;
 }
 
 template <class Abi>
@@ -9793,29 +10014,29 @@ template<typename Abi> ldoublev<Abi> log1p(ldoublev<Abi> x)
 #endif
 
 
-// typedef union
-// {
-//   float value;
-//   /* FIXME: Assumes 32 bit int.  */
-//   unsigned int word;
-// } ieee_float_shape_type;
+typedef union
+{
+  float value;
+  /* FIXME: Assumes 32 bit int.  */
+  unsigned int word;
+} ieee_float_shape_type;
 
-// #define GET_FLOAT_WORD(i,d)					\
-// do {								\
-//   ieee_float_shape_type gf_u;					\
-//   gf_u.value = (d);						\
-//   (i) = gf_u.word;						\
-// } while (0)
+#define GET_FLOAT_WORDff(i,d)					\
+do {								\
+  ieee_float_shape_type gf_u;					\
+  gf_u.value = (d);						\
+  (i) = gf_u.word;						\
+} while (0)
 
 
-// /* Set a float from a 32 bit int.  */
+/* Set a float from a 32 bit int.  */
 
-// #define SET_FLOAT_WORD(d,i)					\
-// do {								\
-//   ieee_float_shape_type sf_u;					\
-//   sf_u.word = (i);						\
-//   (d) = sf_u.value;						\
-// } while (0)
+#define SET_FLOAT_WORDff(d,i)					\
+do {								\
+  ieee_float_shape_type sf_u;					\
+  sf_u.word = (i);						\
+  (d) = sf_u.value;						\
+} while (0)
 
 // get uint
 template <class Abi> 
@@ -10480,66 +10701,257 @@ template <class Abi> ldoublev<Abi> asinh(ldoublev<Abi> x)
 #endif
 
 
+
+static inline float scalarSpecialHandelffff(float x){
+    llvm_32suf ux;
+    ux.f = x;
+
+    if(x == 1)
+        return +0;
+
+    if(ux.u == 0x7f800000)
+        return x;
+
+    if(x < 1 || (ux.u & 0x7f800000) >= 0x7f800000)
+        return LLVM_NAN_32F;
+
+    return -1;
+}
+float acosh_f32_la(float x) {
+    llvm_32suf ux, um, uw_a_1, u1dk2, ux2m1, ux2m1_t, u1dsx2m1_t, u1dsx2m1_t_t, err2, uone;
+    float ux2m1_b, usx2m1_t_t, usx2m1_b_t, usx2m1_tb_t, z, w, k, e, p, ep, y, tmp, err1, w1_max, w1_min;
+    uint32_t ku, jd_nonan;
+
+    float specialCaseRes = scalarSpecialHandelffff(x);
+    if(specialCaseRes!= -1)
+        return specialCaseRes;
+
+    ux.f = x;
+    uone.f = 1;
+    ux2m1.f = ux.f * ux.f - 1.0f;
+    // ux2m1.f -= 1.0f;
+    // std::cout << setprecision(40) << (float)ux.f << std::endl;
+    // std::cout << setprecision(40) << (float)ux2m1.f << std::endl;
+    // ux2m1.f = ux2m1.f - 1;
+    jd_nonan = ux.f < 1073741824 ? 0xffffffff : 0;
+
+    ux2m1_t.u = Top16Maskf & ux2m1.u;
+    u1dsx2m1_t.f = 1 / std::sqrt((float)ux2m1_t.f);
+    u1dsx2m1_t_t.u = u1dsx2m1_t.u & Top16Maskf;
+    usx2m1_t_t = ux2m1_t.f * u1dsx2m1_t_t.f;
+    ux2m1_b = ux2m1.f - ux2m1_t.f;
+    usx2m1_b_t = ux2m1_b * u1dsx2m1_t_t.f;
+    usx2m1_tb_t = usx2m1_t_t + usx2m1_b_t;
+
+    // std::cout << setprecision(40) << (float)ux2m1.f << std::endl;
+    // std::cout << setprecision(40) << (float)ux2m1_t.f << std::endl;
+    // std::cout << setprecision(40) << (float)u1dsx2m1_t.f << std::endl;
+    // std::cout << setprecision(40) << (float)u1dsx2m1_t_t.f << std::endl;
+    // std::cout << setprecision(40) << (float)usx2m1_t_t << std::endl;
+    // std::cout << setprecision(40) << (float)ux2m1_b << std::endl;
+    // std::cout << setprecision(40) << (float)usx2m1_b_t << std::endl;
+    // std::cout << setprecision(40) << (float)usx2m1_tb_t << std::endl;
+    // assert(0);
+
+    float a1=0.375f, a2=0.3125f, a3=0.5f;
+    e = 1 - usx2m1_tb_t * u1dsx2m1_t_t.f;
+    tmp = a1 + e * a2;
+    p = a3 + e * tmp;
+    ep = e * p;
+    err1 = usx2m1_tb_t + ep * usx2m1_tb_t;
+
+    // std::cout << setprecision(40) << (float)e << std::endl;
+    // std::cout << setprecision(40) << (float)tmp << std::endl;
+    // std::cout << setprecision(40) << (float)p << std::endl;
+    // std::cout << setprecision(40) << (float)ep << std::endl;
+    // std::cout << setprecision(40) << (float)err1 << std::endl;
+    // assert(0);
+
+    w = ux.f - 1 + err1;
+    w1_max = 1 > w ? 1 : w;
+    w1_min = 1 < w ? 1 : w;
+    uw_a_1.f = w1_max + w1_min;
+    err2.f = w1_max - uw_a_1.f + w1_min;
+    err2.u = err2.u & jd_nonan;
+
+    uw_a_1.f = jd_nonan ? uw_a_1.f : ux.f * 9.31322575e-10f;
+    ku = uw_a_1.u - TwoThirdf;
+    um.u = (ku & 0x007fffff) + TwoThirdf;  // the range specified
+    ku >>= 0x17;
+    k = ku;
+    u1dk2.u = uone.u - (ku << 0x17);
+
+    float c1=-0.151221797, c2=0.138202384114265, c3=0.140423089, c4=-0.164723262,
+        c5=0.200079203, c6=-0.250042379, c7=0.333332658, c8=-0.5;
+
+    z = um.f - uone.f;
+    z += u1dk2.f * err2.f;
+    y = c1 + z * c2;
+    y = c3 + z * y;
+    y = c4 + z * y;
+    y = c5 + z * y;
+    y = c6 + z * y;
+    y = c7 + z * y;
+    y = c8 + z * y;
+    y = z * y;
+    y = z + z * y;
+
+    k = jd_nonan ? k : k + 31;
+
+    return y + k * LN2f;
+}
+
 template <class Abi>
 floatv<Abi> acosh(floatv<Abi> x) {
-  Abi_32suf<Abi> ux, um, uw_a_1, u1dk2, ux2m1, ux2m1_t, u1dsx2m1_t, u1dsx2m1_t_t, err2, uone;
-  floatv<Abi> ux2m1_b, usx2m1_t_t, usx2m1_b_t, usx2m1_tb_t, z, w, k, e, p, ep, y, tmp, err1, w1_max, w1_min;
-  uintv<Abi> ku;
+  // Abi_32suf<Abi> ux, um, uw_a_1, u1dk2, ux2m1, ux2m1_t, u1dsx2m1_t, u1dsx2m1_t_t, err2, uone;
+  // floatv<Abi> ux2m1_b, usx2m1_t_t, usx2m1_b_t, usx2m1_tb_t, z, w, k, e, p, ep, y, tmp, err1, w1_max, w1_min;
+  // uintv<Abi> ku;
+  // // , cmp = 0;;
 
+  // ux.f = x;
+  // // where(((ux.u & 0x7fffffffU) & 0x7f800000U) >= 0x7f800000U || change_simd_mask_type<float, unsigned int, Abi>(x<=1.0f), cmp) = s2v<int, unsigned int>(-1);
+  // uone.f = 1;
+  // ux2m1.f = (ux.f * ux.f) - 1.0f;
+  // doublev<Abi> test_b = ux.f;
+  // test_b = test_b * test_b;
+  // std::cout << setprecision(40) << (float)ux.f[0] << std::endl;
+  // std::cout << setprecision(40) << (float)ux2m1.f[0] << std::endl;
+  // std::cout << setprecision(40) << (ux.f[0] * ux.f[0] - 1.0f) << std::endl;
+  // std::cout << setprecision(40) << test_b[0] << std::endl;
+  // // ux2m1.f -= 1.0f;
+  // // for(size_t i  = 0; i < x.size(); i++)
+  // // ux2m1.f[i] = ux.f[i] * ux.f[i] - 1;
+
+  // auto jd_nonan = ux.f < float(1073741824) && ux.f >= 1;
+  // ux2m1_t.u = Top16Maskf & ux2m1.u;
+  // // u1dsx2m1_t.f = 1 / sqrt(ux2m1_t.f);
+  // for(size_t i = 0; i < x.size(); i++)
+  //   u1dsx2m1_t.f[i] = 1 / std::sqrt(ux2m1_t.f[i]);
+
+  // u1dsx2m1_t_t.u = u1dsx2m1_t.u & Top16Maskf;
+  // usx2m1_t_t = ux2m1_t.f * u1dsx2m1_t_t.f;
+  // ux2m1_b = ux2m1.f - ux2m1_t.f;
+  // usx2m1_b_t = ux2m1_b * u1dsx2m1_t_t.f;
+  // usx2m1_tb_t = usx2m1_t_t + usx2m1_b_t;
+
+  // std::cout << setprecision(40) << (float)x[0] << std::endl;
+  // std::cout << setprecision(40) << (float)ux2m1.f[0] << std::endl;
+  // std::cout << setprecision(40) << (float)ux2m1_t.f[0] << std::endl;
+  // std::cout << setprecision(40) << (float)u1dsx2m1_t.f[0] << std::endl;
+  // std::cout << setprecision(40) << (float)u1dsx2m1_t_t.f[0] << std::endl;
+  // std::cout << setprecision(40) << (float)usx2m1_t_t[0] << std::endl;
+  // std::cout << setprecision(40) << (float)ux2m1_b[0] << std::endl;
+  // std::cout << setprecision(40) << (float)usx2m1_b_t[0] << std::endl;
+  // std::cout << setprecision(40) << (float)usx2m1_tb_t[0] << std::endl;
+  // assert(0);
+
+  // float a1=0.375, a2=0.3125, a3=0.5;
+  // e = 1 - usx2m1_tb_t * u1dsx2m1_t_t.f;
+  // for(size_t i = 0;i < x.size(); i++)
+  //   e[i] = 1 - usx2m1_tb_t[i] * u1dsx2m1_t_t.f[i];
+
+  // tmp = a1 + e * a2;
+  // p = a3 + e * tmp;
+  // ep = e * p;
+  // err1 = usx2m1_tb_t + ep * usx2m1_tb_t;
+
+  // // std::cout << setprecision(40) << (float)e[0] << std::endl;
+  // // std::cout << setprecision(40) << (float)tmp[0] << std::endl;
+  // // std::cout << setprecision(40) << (float)p[0] << std::endl;
+  // // std::cout << setprecision(40) << (float)ep[0] << std::endl;
+  // // std::cout << setprecision(40) << (float)err1[0] << std::endl;
+  // // assert(0);
+
+  // w = ux.f - 1 + err1;
+  // where(1>w, w1_max) = 1;
+  // where(1<=w, w1_max) = w;
+  // where(1<w, w1_min) = 1;
+  // where(1>=w, w1_min) = w;
+  // uw_a_1.f = w1_max + w1_min;
+  // err2.f = w1_max - uw_a_1.f + w1_min;
+
+  // where(!jd_nonan, err2.f) = s2v<float, floatv<Abi>>(LLVM_NAN_32F);
+
+  // where(!jd_nonan, uw_a_1.f) = ux.f * 9.31322575e-10f;
+  // ku = uw_a_1.u - TwoThirdf;
+  // um.u = (ku & MASKf_mant) + TwoThirdf;  // the range specified
+  // ku >>= 0x17;
+  // k = static_simd_cast<floatv<Abi>>(ku);
+  // u1dk2.u = uone.u - (ku << 0x17);
+
+  // float c1=-0.151221797, c2=0.138202384114265, c3=0.140423089, c4=-0.164723262,
+  //     c5=0.200079203, c6=-0.250042379, c7=0.333332658, c8=-0.5;
+
+  // z = um.f - uone.f;
+  // z += u1dk2.f * err2.f;
+  // y = c1 + z * c2;
+  // y = c3 + z * y;
+  // y = c4 + z * y;
+  // y = c5 + z * y;
+  // y = c6 + z * y;
+  // y = c7 + z * y;
+  // y = c8 + z * y;
+  // y = z * y;
+  // y = z + z * y;
+
+  // where(!jd_nonan, k) = k+31;
+  // y = y + k * (float)LN2f;
+
+  // // if(reduce(cmp) != 0) [[unlikely]]
+  // // {
+  // //   for(size_t i = 0; i < x.size(); i++)
+  // //   {
+  // //     if(cmp[i] != 0)
+  // //       y[i] = [](float x) -> float{
+  // //         llvm_32suf ux;
+  // //         ux.f = x;
+
+  // //         if(x == 1)
+  // //             return +0;
+
+  // //         if(ux.u == 0x7f800000)
+  // //             return x;
+
+  // //         if(x < 1 || (ux.u & 0x7f800000) >= 0x7f800000)
+  // //             return LLVM_NAN_32F;
+  // //       }(x[i]);
+  // //   }
+  // // }
+
+
+  // floatv<Abi> y;
+  // for(size_t i  =0; i < x.size(); i++)
+  //   y[i] = acosh_f32_la(x[i]);
+
+  floatv<Abi> one = 1.0f;
+  floatv<Abi> ln2 = 6.9314718246e-01f;
+  intv<Abi> hx;
+  Abi_32suf<Abi> ux;
   ux.f = x;
-  uone.f = 1;
-  ux2m1.f = ux.f * ux.f - 1;
-  auto jd_nonan = ux.f < ASCTH_NAN && ux.f >= 1;
-  ux2m1_t.u = Top16Maskf & ux2m1.u;
-  u1dsx2m1_t.f = 1 / sqrt(ux2m1_t.f);
-  u1dsx2m1_t_t.u = u1dsx2m1_t.u & Top16Maskf;
-  usx2m1_t_t = ux2m1_t.f * u1dsx2m1_t_t.f;
-  ux2m1_b = ux2m1.f - ux2m1_t.f;
-  usx2m1_b_t = ux2m1_b * u1dsx2m1_t_t.f;
-  usx2m1_tb_t = usx2m1_t_t + usx2m1_b_t;
+  hx = ux.i;
 
-  float a1=0.375, a2=0.3125, a3=0.5;
-  e = 1 - usx2m1_tb_t * u1dsx2m1_t_t.f;
-  tmp = a1 + e * a2;
-  p = a3 + e * tmp;
-  ep = e * p;
-  err1 = usx2m1_tb_t + ep * usx2m1_tb_t;
+  auto spc1 = (hx > 0x40000000);
+  auto spc1_f = simd_mask<float, Abi>(hx > 0x40000000);
+  auto spc1_1 = (hx >= 0x4d800000);
+  auto spc1_1_1 = (hx >= 0x7f800000);
+  auto spc1_1_1_mask = simd_mask<float, Abi>(spc1 & spc1_1 & spc1_1_1);
+  floatv<Abi> spc1_1_1_result = x + x;
+  auto spc1_1_2_mask = simd_mask<float, Abi>(spc1 & spc1_1 & !spc1_1_1);
+  floatv<Abi> spc1_1_2_result = log(x) + ln2;
+  floatv<Abi> spc1_result = log(2.0f * x - one / (x + sqrt(x * x - one)));
+  auto spc2 = simd_mask<float, Abi>(hx > 0x3f800000);
+  floatv<Abi> t = x - one;
+  floatv<Abi> spc2_result = log1p(t + sqrt(2.0f * t + t * t));
+  auto spc3 = simd_mask<float, Abi>(hx == 0x3f800000);
+  
+  floatv<Abi> y = (x - x) / (x - x);
+  where(spc3, y) = 0.0f;
+  where(spc2, y) = spc2_result;
+  where(spc1_f, y) = spc1_result;
+  where(spc1_1_2_mask, y) = spc1_1_2_result;
+  where(spc1_1_1_mask, y) = spc1_1_1_result;
 
-  w = ux.f - 1 + err1;
-  where(1>w, w1_max) = 1;
-  where(1<=w, w1_max) = w;
-  where(1<w, w1_min) = 1;
-  where(1>=w, w1_min) = w;
-  uw_a_1.f = w1_max + w1_min;
-  err2.f = w1_max - uw_a_1.f + w1_min;
-
-  where(!jd_nonan, err2.f) = s2v<float, floatv<Abi>>(LLVM_NAN_32F);
-
-  where(!jd_nonan, uw_a_1.f) = ux.f * 9.31322575e-10f;
-  ku = uw_a_1.u - TwoThirdf;
-  um.u = (ku & MASKf_mant) + TwoThirdf;  // the range specified
-  ku >>= 0x17;
-  k = static_simd_cast<floatv<Abi>>(ku);
-  u1dk2.u = uone.u - (ku << 0x17);
-
-  float c1=-0.151221797, c2=0.138202384114265, c3=0.140423089, c4=-0.164723262,
-      c5=0.200079203, c6=-0.250042379, c7=0.333332658, c8=-0.5;
-
-  z = um.f - uone.f;
-  z += u1dk2.f * err2.f;
-  y = c1 + z * c2;
-  y = c3 + z * y;
-  y = c4 + z * y;
-  y = c5 + z * y;
-  y = c6 + z * y;
-  y = c7 + z * y;
-  y = c8 + z * y;
-  y = z * y;
-  y = z + z * y;
-
-  where(!jd_nonan, k) = k+31;
-
-  return y + k * (float)LN2f;
+  return y;
 }
 
 template <class Abi> doublev<Abi> acosh(doublev<Abi> x) 
@@ -10673,33 +11085,6 @@ template <class Abi> ldoublev<Abi> acosh(ldoublev<Abi> x)
   return static_simd_cast<ldoublev<Abi>>(res);
 }
 #endif
-
-template <class Abi>
-floatv<Abi> sin(floatv<Abi> x) {
-  Abi_32suf<Abi> n, r, r2, y, m_x;
-  uintv<Abi> sign, odd;
-
-  m_x.f = x;  
-  r.u = m_x.u & AbsMaskf;
-  sign = m_x.u & ~AbsMaskf;
-
-  n.f = (float)InvPi_f32 * r.f + ExpShift23;
-  odd = n.u << 31;
-  n.f -= ExpShift23;
-
-  r.f = -SC_Pi1_f32 * n.f + r.f;
-  r.f = -SC_Pi2_f32 * n.f + r.f;
-  r.f = -SC_Pi3_f32 * n.f + r.f;
-
-  r2.f = r.f * r.f;
-  y.f = SC_A9_f32 * r2.f + SC_A7_f32;
-  y.f = y.f * r2.f + SC_A5_f32;
-  y.f = y.f * r2.f + SC_A3_f32;
-  y.f = y.f * r2.f * r.f + r.f;
-  y.u =  (y.u ^ sign ^ odd);
-  return y.f;
-}
-
 
 
 
@@ -11425,6 +11810,202 @@ static inline double scalarSpecialHandel(double (*F)(double), double x){
 
     return -2;
 }
+
+
+
+
+
+
+typedef struct
+{
+  double sign[4];		/* Sign of sine in quadrants 0..3.  */
+  double hpi_inv;		/* 2 / PI ( * 2^24 if !TOINT_INTRINSICS).  */
+  double hpi;			/* PI / 2.  */
+  double c0, c1, c2, c3, c4;	/* Cosine polynomial.  */
+  double s1, s2, s3;		/* Sine polynomial.  */
+} sincos_t;
+
+
+const sincos_t __sincosf_table[2] =
+{
+  {
+    { 1.0, -1.0, -1.0, 1.0 },
+    0x1.45F306DC9C883p+23,
+    0x1.921FB54442D18p0,
+    0x1p0,
+    -0x1.ffffffd0c621cp-2,
+    0x1.55553e1068f19p-5,
+    -0x1.6c087e89a359dp-10,
+    0x1.99343027bf8c3p-16,
+    -0x1.555545995a603p-3,
+    0x1.1107605230bc4p-7,
+    -0x1.994eb3774cf24p-13
+  },
+  {
+    { 1.0, -1.0, -1.0, 1.0 },
+    0x1.45F306DC9C883p+23,
+    0x1.921FB54442D18p0,
+    -0x1p0,
+    0x1.ffffffd0c621cp-2,
+    -0x1.55553e1068f19p-5,
+    0x1.6c087e89a359dp-10,
+    -0x1.99343027bf8c3p-16,
+    -0x1.555545995a603p-3,
+    0x1.1107605230bc4p-7,
+    -0x1.994eb3774cf24p-13
+  }
+};
+static const uint32_t __inv_pio4[24] =
+{
+  0xa2,       0xa2f9,	  0xa2f983,   0xa2f9836e,
+  0xf9836e4e, 0x836e4e44, 0x6e4e4415, 0x4e441529,
+  0x441529fc, 0x1529fc27, 0x29fc2757, 0xfc2757d1,
+  0x2757d1f5, 0x57d1f534, 0xd1f534dd, 0xf534ddc0,
+  0x34ddc0db, 0xddc0db62, 0xc0db6295, 0xdb629599,
+  0x6295993c, 0x95993c43, 0x993c4390, 0x3c439041
+};
+
+static inline float
+sinf_poly (double x, double x2, const sincos_t *p, int n)
+{
+  double x3, x4, x6, x7, s, c, c1, c2, s1;
+
+  if ((n & 1) == 0)
+    {
+      x3 = x * x2;
+      s1 = p->s2 + x2 * p->s3;
+
+      x7 = x3 * x2;
+      s = x + x3 * p->s1;
+
+      return s + x7 * s1;
+    }
+  else
+    {
+      x4 = x2 * x2;
+      c2 = p->c3 + x2 * p->c4;
+      c1 = p->c0 + x2 * p->c1;
+
+      x6 = x4 * x2;
+      c = c1 + x4 * p->c2;
+
+      return c + x6 * c2;
+    }
+}
+
+
+static inline double
+reduce_large (uint32_t xi, int *np)
+{
+    static const double pi63 = 0x1.921FB54442D18p-62;
+    const uint32_t *arr = &__inv_pio4[(xi >> 26) & 15];
+    int shift = (xi >> 23) & 7;
+    uint64_t n, res0, res1, res2;
+    xi = (xi & 0xffffff) | 0x800000;
+    xi <<= shift;
+
+    res0 = xi * arr[0];
+    res1 = (uint64_t)xi * arr[4];
+    res2 = (uint64_t)xi * arr[8];
+    res0 = (res2 >> 32) | (res0 << 32);
+    res0 += res1;
+
+    n = (res0 + (1ULL << 61)) >> 62;
+    res0 -= n << 62;
+    double x = (int64_t)res0;
+    *np = n;
+    return x * pi63;
+}
+
+static inline float largeprocess_sinf(float x){
+    llvm_32suf ux;
+    double xd, s;
+    int n, sign;
+    const sincos_t *p = &__sincosf_table[0];
+
+    ux.f = x;
+    sign = ux.u >> 31;
+    xd = reduce_large(ux.u, &n);
+
+    s = p->sign[(n + sign) & 3];
+    return sinf_poly (xd * s, xd * xd, p, n);
+}
+
+static inline float largeprocess_cosf(float x){
+    llvm_32suf ux;
+    double xd, s;
+    int n, sign;
+    const sincos_t *p = &__sincosf_table[0];
+
+    ux.f = x;
+    sign = ux.u >> 31;
+    xd = reduce_large(ux.u, &n);
+
+    s = p->sign[(n + sign) & 3];
+
+    if ((n + sign) & 2)
+        p = &__sincosf_table[1];
+
+    return sinf_poly (xd * s, xd * xd, p, n ^ 1);
+}
+
+static inline float scalarSpecialHandelf(float (*F)(float), float x){
+    llvm_32suf ux, u120;
+    ux.f = x;
+
+    if(ux.u > 0xff800000)
+        return -LLVM_NAN_32F;
+
+    ux.u = ux.u & 0x7fffffff;
+    if(ux.u >= 0x7f800000)
+        return LLVM_NAN_32F;
+
+    u120.f = 120;
+    if((ux.u>>24)>(u120.u>>24)){
+        return F(x);
+    }
+
+    return -2;
+}
+
+
+template <class Abi>
+floatv<Abi> sin(floatv<Abi> x) {
+  Abi_32suf<Abi> n, r, r2, y, m_x;
+  uintv<Abi> sign, odd, cmp = 0;
+
+  m_x.f = x;  
+  r.u = m_x.u & AbsMaskf;
+  sign = m_x.u & ~AbsMaskf;
+  r2.f = 0x1p20f;
+  where(r.u >= r2.u, cmp) = s2v<int, unsigned int>(-1);
+
+  n.f = (float)InvPi_f32 * r.f + ExpShift23;
+  odd = n.u << 31;
+  n.f -= ExpShift23;
+
+  r.f = -SC_Pi1_f32 * n.f + r.f;
+  r.f = -SC_Pi2_f32 * n.f + r.f;
+  r.f = -SC_Pi3_f32 * n.f + r.f;
+
+  r2.f = r.f * r.f;
+  y.f = SC_A9_f32 * r2.f + SC_A7_f32;
+  y.f = y.f * r2.f + SC_A5_f32;
+  y.f = y.f * r2.f + SC_A3_f32;
+  y.f = y.f * r2.f * r.f + r.f;
+  y.u =  (y.u ^ sign ^ odd);
+
+  if(reduce(cmp) != 0) [[unlikely]]
+  {
+    for(size_t i = 0; i < x.size(); i++)
+    {
+      if(cmp[i] != 0)
+        y.f[i] = scalarSpecialHandelf(largeprocess_sinf, x[i]);
+    }
+  }
+  return y.f;
+}
+
 
 
 template <class Abi>
@@ -13225,10 +13806,12 @@ template<class Abi> ldoublev<Abi> sinh(ldoublev<Abi> x)
 template <class Abi>
 floatv<Abi> cos(floatv<Abi> x) {
   Abi_32suf<Abi> n, r, r2, y, m_x;
-  uintv<Abi> odd;
+  uintv<Abi> odd, cmp = 0;
 
   m_x.f = x;
   r.u = m_x.u & AbsMaskf;
+  r2.f = 0x1p20f;
+  where(r.u >= r2.u, cmp) = s2v<int, unsigned int>(-1);
   n.f = (float)InvPi_f32 * (r.f + (float)HalfPi_f32) + ExpShift23;
   odd = n.u << 31;
   n.f -= ExpShift23;
@@ -13243,6 +13826,15 @@ floatv<Abi> cos(floatv<Abi> x) {
   y.f = y.f * r2.f + SC_A3_f32;
   y.f = y.f * r2.f * r.f + r.f;
   y.u =  (y.u ^ odd);
+
+  if(reduce(cmp) != 0) [[unlikely]]
+  {
+    for(size_t i = 0; i < x.size(); i++)
+    {
+      if(cmp[i] != 0)
+        y.f[i] = scalarSpecialHandelf(largeprocess_cosf, x[i]);
+    }
+  }
   return y.f;
 }
 
@@ -13336,6 +13928,7 @@ template <class Abi>
 floatv<Abi> cosh(floatv<Abi> x) {
   Abi_32suf<Abi> x1, x2, m_x, r, r2, n, y, Half;
   floatv<Abi> temp, y1, y2, p1, p2;
+  
 
   m_x.f = x;
   r.u = m_x.u & (~MASKf_sign);
@@ -13362,6 +13955,8 @@ floatv<Abi> cosh(floatv<Abi> x) {
   p1 = p2 + p1 * y2;
   p1 = y1 + p1;     
   y.f = p1;
+
+  
   return y.f;
 }
 
@@ -13499,13 +14094,13 @@ samesize<int, ldoublev<Abi>> ilogb(ldoublev<Abi> x){
   return retv;
 }
 #else
-template <class Abi> samesize<int, ldoublev<Abi>> ilogb(ldoublev<Abi> x)
+template <class Abi> ldoublev<Abi> ilogb(ldoublev<Abi> x, ldoublev<Abi> y)
 {
-  doublev<Abi> src1;
-  samesize<int, ldoublev<Abi>> dst;
+  doublev<Abi> src1, src2, dst;
   src1 = static_simd_cast<doublev<Abi>>(x);
-  dst = ilogb(src1);
-  return (dst);
+  src2 = static_simd_cast<doublev<Abi>>(y);
+  dst = ilogb(src1, src2);
+  return static_simd_cast<ldoublev<Abi>>(dst);
 }
 #endif
 
@@ -13546,18 +14141,172 @@ ldoublev<Abi> fmin(ldoublev<Abi> x, ldoublev<Abi> y){
   return x;
 }
 
+
 template <class Abi>
 floatv<Abi> fmod(floatv<Abi> x, floatv<Abi> y){
-  floatv<Abi> n = vld1q_f<floatv<Abi>, intv<Abi>>(x / y);
-  x -= n * y;
-  return x;
+  Abi_32suf<Abi> ux, uy;
+  floatv<Abi> res, spce_case;
+	intv<Abi> ex;
+	intv<Abi> ey;
+	uintv<Abi> sx;
+	uintv<Abi> i;
+  ux.f = x;
+  uy.f = y;
+
+  ex = static_simd_cast<intv<Abi>>(ux.u>>23 & 0xffU);
+  ey = static_simd_cast<intv<Abi>>(uy.u>>23 & 0xffU);
+  sx = (ux.u & 0x80000000);
+  spce_case = 1.0f;
+
+	/* in the followings uxi should be ux.i, but then gcc wrongly adds */
+	/* float load/store to inner loops ruining performance and code size */
+	uintv<Abi> uxi = ux.u;
+	uintv<Abi> uyi = uy.u;
+  uintv<Abi> uxi_be = ux.u;
+	uintv<Abi> uyi_be = uy.u;
+
+
+  i = uxi<<9;
+  auto jd1 = simd_mask<unsigned int, Abi>(ex == 0) && ((i&0xffffffff) != 0);
+LOOP0:
+  auto mask = jd1 & (i>>31 == 0);
+  where(mask, ex) = ex-1;
+  i <<= 1;
+  if(any_of(mask)) goto LOOP0;
+  uxi &= -1U >> 9;
+	uxi |= 1U << 23;
+  where(jd1, uxi) = ux.u << static_simd_cast<uintv<Abi>>(-ex + 1);
+  
+  i = uyi<<9;
+  jd1 = simd_mask<unsigned int, Abi>(ey == 0) && ((i&0xffffffff) != 0);
+LOOP1:
+  mask = jd1 & (i>>31 == 0);
+  where(mask, ey) = ey-1;
+  i <<= 1;
+  if(any_of(mask)) goto LOOP1;
+  uyi &= -1U >> 9;
+	uyi |= 1U << 23;
+  where(jd1, uyi) = uy.u << static_simd_cast<uintv<Abi>>(-ey + 1);
+
+
+LOOP2:
+  auto jd2 = simd_mask<unsigned int, Abi>(ex > ey);
+  where(jd2, i) = uxi - uyi;
+  auto jd3 = (i >> 31 == 0);
+  where(jd2 & jd3 & (i == 0), spce_case) = 0*x;
+  where(jd2 & jd3, uxi) = i;
+  where(jd2, uxi) = uxi << 1;
+  where(jd2, ex) = ex - 1;
+  if(any_of(jd2)) goto LOOP2;
+
+  i = uxi - uyi;
+  auto spjd = (i >> 31 == 0) & (i == 0);
+  where(spjd, spce_case) = 0*x;
+  where((i >> 31 == 0), uxi) = i;
+
+LOOP3:
+  jd3 = (uxi>>23 == 0) && ((uxi&0xffffffff) != 0); 
+  where(jd3, ex) = ex - 1;
+  where(jd3, uxi) = uxi << 1;
+  if(any_of(jd3)) goto LOOP3;
+
+  auto jd4 = simd_mask<unsigned int, Abi>(ex > 0);
+  where(!jd4, uxi) = uxi >> static_simd_cast<uintv<Abi>>(-ex + 1);
+  where(jd4, uxi) = (uxi - (1U << 23)) | static_simd_cast<uintv<Abi>>(ex) << 23;
+	uxi |= static_simd_cast<uintv<Abi>>(sx);
+	ux.u = uxi;
+	res = ux.f;
+
+  where((spce_case != 1.0f), res) = spce_case;
+  where((uxi_be<<1 <= uyi_be<<1), res) = x;
+  where((uxi_be<<1 == uyi_be<<1), res) = 0*x;
+  where(change_simd_mask_type<unsigned int, float, Abi>((uyi_be<<1 == 0  | (uxi_be>>23 & 0xffU) == 0xffU)) | isnan(y), res) = (x*y)/(x*y);
+
+  return res;
 }
+
 
 template <class Abi>
 doublev<Abi> fmod(doublev<Abi> x, doublev<Abi> y){
-  doublev<Abi> n = vld1q_f<doublev<Abi>, intv<Abi>>(x / y);
-  x -= n * y;
-  return x;
+  Abi_64suf<Abi> ux, uy;
+  doublev<Abi> res, spce_case;
+	intv<Abi> ex;
+	intv<Abi> ey;
+	intv<Abi> sx;
+	ulongv<Abi> i;
+  ux.f = x;
+  uy.f = y;
+
+  ex = static_simd_cast<intv<Abi>>(ux.u>>52 & 0x7ffUL);
+  ey = static_simd_cast<intv<Abi>>(uy.u>>52 & 0x7ffUL);
+  sx = static_simd_cast<intv<Abi>>(ux.u>>63);
+  spce_case = 1.0;
+
+	/* in the followings uxi should be ux.i, but then gcc wrongly adds */
+	/* float load/store to inner loops ruining performance and code size */
+	ulongv<Abi> uxi = ux.u;
+	ulongv<Abi> uyi = uy.u;
+  ulongv<Abi> uxi_be = ux.u;
+	ulongv<Abi> uyi_be = uy.u;
+
+
+  auto jd1 = simd_mask<unsigned long, Abi>(ex == 0) && ((i&0xffffffffffffffff) != 0);
+  i = uxi<<12;
+LOOP0:
+  auto mask = jd1 & (i>>63 == 0);
+  where(mask, ex) = ex-1;
+  i <<= 1;
+  if(any_of(mask)) goto LOOP0;
+  uxi &= -1ULL >> 12;
+	uxi |= 1ULL << 52;
+  where(jd1, uxi) = ux.u << static_simd_cast<ulongv<Abi>>(-ex + 1);
+  
+
+  jd1 = simd_mask<unsigned long, Abi>(ey == 0) && ((i&0xffffffffffffffff) != 0);
+  i = uyi<<12;
+LOOP1:
+  mask = jd1 & (i>>63 == 0);
+  where(mask, ey) = ey-1;
+  i <<= 1;
+  if(any_of(mask)) goto LOOP1;
+  uyi &= -1ULL >> 12;
+	uyi |= 1ULL << 52;
+  where(jd1, uyi) = uy.u << static_simd_cast<ulongv<Abi>>(-ey + 1);
+
+LOOP2:
+  auto jd2 = simd_mask<unsigned long, Abi>(ex > ey);
+  where(jd2, i) = uxi - uyi;
+  auto jd3 = (i >> 63 == 0);
+  where(jd2 & jd3 & (i == 0), spce_case) = 0*x;
+  where(jd2 & jd3, uxi) = i;
+  where(jd2, uxi) = uxi << 1;
+  where(jd2, ex) = ex - 1;
+  if(any_of(jd2)) goto LOOP2;
+
+  i = uxi - uyi;
+  auto spjd = (i >> 63 == 0) & (i == 0);
+  where(spjd, spce_case) = 0*x;
+  where((i >> 63 == 0), uxi) = i;
+
+LOOP3:
+  jd3 = (uxi>>52 == 0) && ((uxi&0xffffffffffffffff) != 0);
+  where(jd3, ex) = ex - 1;
+  where(jd3, uxi) = uxi << 1;
+  if(any_of(jd3)) goto LOOP3;
+
+  auto jd4 = simd_mask<unsigned long, Abi>(ex > 0);
+  where(!jd4, uxi) = uxi >> static_simd_cast<ulongv<Abi>>(-ex + 1);
+  where(jd4, uxi) = (uxi - (1ULL << 52)) | static_simd_cast<ulongv<Abi>>(ex) << 52;
+	uxi |= static_simd_cast<ulongv<Abi>>(sx) << 63;
+	ux.u = uxi;
+	res = ux.f;
+
+  where((spce_case != 1.0), res) = spce_case;
+  where((uxi_be<<1 <= uyi_be<<1), res) = x;
+  where((uxi_be<<1 == uyi_be<<1), res) = 0*x;
+  where(change_simd_mask_type<unsigned long, double, Abi>((uyi_be<<1 == 0  | (uxi_be>>52 & 0x7ff) == 0x7ff)) | isnan(y), res) = (x*y)/(x*y);
+
+  return res;
 }
 
 template <class Abi>
@@ -13569,24 +14318,191 @@ ldoublev<Abi> fmod(ldoublev<Abi> x, ldoublev<Abi> y){
 
 template <class Abi>
 floatv<Abi> remainder(floatv<Abi> x, floatv<Abi> y){
-  floatv<Abi> n = round(x / y);
-  x -= n * y;
-  return x;
+  intv<Abi> hx, hy, qs;
+  uintv<Abi> sx;
+  Abi_32suf<Abi> ux, uy;
+
+  ux.f = x;
+  uy.f = y;
+  hx = ux.i;
+  hy = uy.i;
+  sx = static_simd_cast<uintv<Abi>>(hx) & 0x80000000;
+  qs = static_simd_cast<intv<Abi>>(sx ^ (static_simd_cast<uintv<Abi>>(hy) & 0x80000000));
+  hy &= 0x7fffffff;
+  hx &= 0x7fffffff;
+
+  auto spc_mask1 = simd_mask<float, Abi>(static_simd_cast<uintv<Abi>>(hy) == 0);
+  auto spc_mask2 = simd_mask<float, Abi>((hx >= 0x7f800000) || (hy > 0x7f800000));
+  floatv<Abi> spc_result1 = (x * y) / (x * y);
+
+  auto spc1_f = simd_mask<float, Abi>(hy <= 0x7dffffff);
+  where(spc1_f, x) = fmod(x, 8 * y);
+  auto spc2 = ((hx - hy) == 0);
+  auto spc_mask3 = simd_mask<float, Abi>(spc2);
+  // auto spc2_1 = (qs == 0);
+
+  x = abs(x);
+  y = abs(y);
+
+  auto spc3_f = (simd_mask<float, Abi>(hy <= 0x7e7fffff) && (x >= 4 * y));
+  where(spc3_f, x) = x - 4 * y;
+
+  auto spc4_f = (simd_mask<float, Abi>(hy <= 0x7effffff) && (x >= 2 * y));
+  where(spc4_f, x) = x - 2 * y;
+
+
+  auto spc5_f = simd_mask<float, Abi>(hy < 0x01000000);
+  auto spc5_1_f = (x + x > y);
+  auto spc5_part = (spc5_f & spc5_1_f);
+  where(spc5_part, x) = x - y;
+  auto spc5_1_1_f = (x + x >= y);
+  auto spc5_part_1 = (spc5_part & spc5_1_1_f);
+  where(spc5_part_1, x) = x - y;
+
+  floatv<Abi> y_half = 0.5f * y;
+  auto spc6_1_f = (x > y_half);
+  auto spc6_part = (!spc5_f & spc6_1_f);
+  where(spc6_part, x) = x - y;
+  auto spc6_1_1_f = (x >= y_half);
+  auto spc6_part_1 = (spc6_part & spc6_1_1_f);
+  where(spc6_part_1, x) = x - y;
+
+  floatv<Abi> result;
+  ux.f = x;
+  ux.u ^= sx;
+  result = ux.f;
+  where(spc_mask3, result) = 0 * x;
+  where(spc_mask2 | spc_mask1, result) = spc_result1;
+  return result;
 }
 
 template <class Abi>
 doublev<Abi> remainder(doublev<Abi> x, doublev<Abi> y){
-  doublev<Abi> n = round(x / y);
-  x -= n * y;
-  return x;
+  longv<Abi> hx, hy, qs;
+  ulongv<Abi> lx, ly, sx;
+  Abi_64suf<Abi> ux, uy, tmp;
+
+  ux.f = x;
+  uy.f = y;
+  hx = static_simd_cast<longv<Abi>>((ux.u & 0xffffffff00000000UL));
+  lx = static_simd_cast<ulongv<Abi>>((ux.u & 0xffffffffUL));
+  hy = static_simd_cast<longv<Abi>>((uy.u & 0xffffffff00000000UL));
+  ly = static_simd_cast<ulongv<Abi>>((uy.u & 0xffffffffUL));
+
+  sx = static_simd_cast<ulongv<Abi>>(hx) & 0x8000000000000000UL;
+  qs = static_simd_cast<longv<Abi>>(sx ^ (static_simd_cast<ulongv<Abi>>(hy) & 0x8000000000000000UL));
+  hy = static_simd_cast<longv<Abi>>(static_simd_cast<ulongv<Abi>>(hy) & 0x7fffffff00000000UL);
+  hx = static_simd_cast<longv<Abi>>(static_simd_cast<ulongv<Abi>>(hx) & 0x7fffffff00000000UL);
+
+  auto spc_mask1 = simd_mask<double, Abi>((static_simd_cast<ulongv<Abi>>(hy) | ly) == 0);
+  auto spc_mask2 = simd_mask<double, Abi>((hx >= 0x7ff0000000000000LL) || ((hy >= 0x7ff0000000000000LL) && (((hy - 0x7ff0000000000000LL) | static_simd_cast<longv<Abi>>(ly)) != 0)));
+  doublev<Abi> spc_result1 = (x * y) / (x * y);
+  
+  auto spc1_f = simd_mask<double, Abi>(static_simd_cast<ulongv<Abi>>(hy) <=0x7fbfffff00000000UL);
+  where(spc1_f, x) = fmod(x, (8 * y));
+
+
+  auto spc2 = ((static_simd_cast<ulongv<Abi>>(hx - hy)) | (lx - ly)) == 0;
+  auto spc_mask3 = simd_mask<double, Abi>(spc2);
+  auto spc2_1 = change_simd_mask_type<long, unsigned long, Abi>(qs == 0);
+
+  x = abs(x);
+  y = abs(y);
+
+  auto spc3_f = (simd_mask<double, Abi>(static_simd_cast<ulongv<Abi>>(hy) <= 0x7fcfffff00000000UL) && (x >= 4 * y));
+  where(spc3_f, x) = x - 4 * y;
+
+  auto spc4_f = (simd_mask<double, Abi>(static_simd_cast<ulongv<Abi>>(hy) <= 0x7fdfffff00000000UL) && (x >= 2 * y));
+  where(spc4_f, x) = x - 2 * y;
+
+  auto spc5_f = simd_mask<double, Abi>(static_simd_cast<ulongv<Abi>>(hy) < 0x0020000000000000UL);
+  auto spc5_1_f = (x + x > y);
+  auto spc5_part = (spc5_f & spc5_1_f);
+  where(spc5_part, x) = x - y;
+  auto spc5_1_1_f = (x + x >= y);
+  auto spc5_part_1 = (spc5_part & spc5_1_1_f);
+  where(spc5_part_1, x) = x - y;
+  
+  doublev<Abi> y_half = 0.5 * y;
+  auto spc6_1_f = (x > y_half);
+  auto spc6_part = (!spc5_f & spc6_1_f);
+  where(spc6_part, x) = x - y;
+  auto spc6_1_1_f = (x >= y_half);
+  auto spc6_part_1 = (spc6_part & spc6_1_1_f);
+  where(spc6_part_1, x) = x - y;
+
+  auto spc7 = simd_mask<double, Abi>(sx != 0);
+  doublev<Abi> result = x;
+  where(spc7, result) = -x;
+  where(spc_mask3, result) = 0.0 * x;
+  where(spc_mask2 | spc_mask1, result) = spc_result1;
+
+  return result;
 }
 
 template <class Abi>
 ldoublev<Abi> remainder(ldoublev<Abi> x, ldoublev<Abi> y){
-  ldoublev<Abi> n = round(x / y);
-  x -= n * y;
-  return x;
+  longv<Abi> hx, hy;
+  ulongv<Abi> sx, lx, ly, qs;
+  Abi_128suf<Abi> ux, uy;
+
+  ux.f = x;
+  uy.f = y;
+  hx = static_simd_cast<longv<Abi>>(GET_LONGDOUBLE_HI(ux.u));
+  lx = GET_LONGDOUBLE_LO(ux.u);
+  hy = static_simd_cast<longv<Abi>>(GET_LONGDOUBLE_HI(uy.u));
+  ly = GET_LONGDOUBLE_LO(uy.u);
+
+  sx = static_simd_cast<ulongv<Abi>>(hx) & 0x8000000000000000ULL;
+  qs = sx ^ (static_simd_cast<ulongv<Abi>>(hy) & 0x8000000000000000ULL);
+  hy = hy & 0x7fffffffffffffffLL;
+  hx = hx & 0x7fffffffffffffffLL;
+
+  auto spc_mask1 = simd_mask<long double, Abi>((static_simd_cast<ulongv<Abi>>(hy) | lx) == 0);
+  auto spc_mask2 = simd_mask<long double, Abi>((hx >= 0x7fff000000000000LL) || ((hy >= 0x7fff000000000000LL) && (((hy - 0x7fff000000000000LL) | static_simd_cast<longv<Abi>>(ly)) != 0)));
+  ldoublev<Abi> spc_result1 = (x * y) / (x * y);
+  
+  auto spc1_f = simd_mask<long double, Abi>(hy <=0x7ffbffffffffffffLL);
+  where(spc1_f, x) = fmod(x, 8 * y);
+
+  auto spc2 = (static_simd_cast<ulongv<Abi>>(hx - hy) | (lx - ly)) == 0;
+  auto spc_mask3 = simd_mask<long double, Abi>(spc2);
+  auto spc2_1 = (qs == 0);
+
+  x = abs(x);
+  y = abs(y);
+
+  auto spc3_f = (simd_mask<long double, Abi>(hy <= 0x7ffcffffffffffffLL) && (x >= 4 * y));
+  where(spc3_f, x) = x - 4 * y;
+
+  auto spc4_f = (simd_mask<long double, Abi>(hy <= 0x7ffdffffffffffffLL) && (x >= 2 * y));
+  where(spc4_f, x) = x - 2 * y;
+
+  auto spc5_f = simd_mask<long double, Abi>(hy < 0x0002000000000000LL);
+  auto spc5_1_f = (x + x > y);
+  auto spc5_part = (spc5_f & spc5_1_f);
+  where(spc5_part, x) = x - y;
+  auto spc5_1_1_f = (x + x >= y);
+  auto spc5_part_1 = (spc5_part & spc5_1_1_f);
+  where(spc5_part_1, x) = x - y;
+  
+  ldoublev<Abi> y_half = 0.5L * y;
+  auto spc6_1_f = (x > y_half);
+  auto spc6_part = (!spc5_f & spc6_1_f);
+  where(spc6_part, x) = x - y;
+  auto spc6_1_1_f = (x >= y_half);
+  auto spc6_part_1 = (spc6_part & spc6_1_1_f);
+  where(spc6_part_1, x) = x - y;
+
+  auto spc7 = simd_mask<long double, Abi>(sx != 0);
+  ldoublev<Abi> result = x;
+  where(spc7, result) = -x;
+  where(spc_mask3, result) = 0.0L * x;
+  where(spc_mask2 | spc_mask1, result) = spc_result1;
+
+  return result;
 }
+
 
 template <class Abi> 
 floatv<Abi> log10(floatv<Abi> x){
@@ -13613,6 +14529,15 @@ floatv<Abi> log10(floatv<Abi> x){
   p = (float)LN_2 * exponent + r;
   y = y * r2 + p;
   y = y * (float)InvLn10;
+
+  simd_mask<float, Abi> jd = change_simd_mask_type<unsigned  int, float, Abi>(ux.u - 0x00800000U >= 0x7f800000U - 0x00800000U);
+  simd_mask<float, Abi> jd1 = change_simd_mask_type<unsigned  int, float, Abi>(ux.u * 2 == 0);
+  simd_mask<float, Abi> jd2 = change_simd_mask_type<unsigned  int, float, Abi>(ux.u == 0x7f800000U);
+  simd_mask<float, Abi> jd3 = change_simd_mask_type<unsigned  int, float, Abi>(((ux.u & 0x80000000U) == 0x80000000U) || (ux.u * 2 >= 0xff000000U));
+  where(jd && jd3, y) = LLVM_NAN_32F;
+  where(jd && jd2, y) = x;
+  where(jd && jd1, y) = -LLVM_INF_32F;
+  where(x<0, y) = LLVM_NAN_32F;
   return y;
 }
 
@@ -13673,10 +14598,9 @@ template <class Abi> doublev<Abi> log10(doublev<Abi> x){
   simd_mask<double, Abi> jd1 = change_simd_mask_type<unsigned long int, double, Abi>(ux.u * 2 == 0);
   simd_mask<double, Abi> jd2 = change_simd_mask_type<unsigned long int, double, Abi>(ux.u == 0x7ff0000000000000UL);
   simd_mask<double, Abi> jd3 = change_simd_mask_type<unsigned long int, double, Abi>(((xu16 & 0x8000) == 0x8000) || ((xu16 & 0x7ff0) == 0x7ff0));
-  where(jd && jd1, y) = LLVM_INF_64F;
-  where(jd && jd2, y) = x;
   where(jd && jd3, y) = LLVM_NAN_64F;
-
+  where(jd && jd2, y) = x;
+  where(jd && jd1, y) = -LLVM_INF_64F;
   where(x<0, y) = LLVM_NAN_64F;
   return y;
 }
@@ -13812,12 +14736,199 @@ template<class Abi> ldoublev<Abi> log10(ldoublev<Abi> x)
 }
 #endif
 
+
+#include <float.h>
+#include <math.h>
+#define fabs_tg(x) __MATH_TG ((x), (__typeof (x)) __builtin_fabs, (x))
+
+/* These must be function-like macros because some __MATH_TG
+   implementations macro-expand the function-name argument before
+   concatenating a suffix to it.  */
+#define min_of_type_f() FLT_MIN
+#define min_of_type_() DBL_MIN
+#define min_of_type_l() LDBL_MIN
+#define min_of_type_f128() FLT128_MIN
+
+#define min_of_type(x) __MATH_TG ((x), (__typeof (x)) min_of_type_, ())
+
+#define math_force_eval(x)						\
+  ({ __typeof (x) __x = (x); __asm __volatile__ ("" : : "m" (__x)); })
+
+/* If X (which is not a NaN) is subnormal, force an underflow
+   exception.  */
+#define math_check_force_underflow(x)				\
+  do								\
+    {								\
+      __typeof (x) force_underflow_tmp = (x);			\
+      if (fabs_tg (force_underflow_tmp)				\
+	  < min_of_type (force_underflow_tmp))			\
+	{							\
+	  __typeof (force_underflow_tmp) force_underflow_tmp2	\
+	    = force_underflow_tmp * force_underflow_tmp;	\
+	  math_force_eval (force_underflow_tmp2);		\
+	}							\
+    }								\
+  while (0)
+
+float llvm__kernel_tanf(float x, float y, int iy)
+{
+
+  static const float
+one   =  1.0000000000e+00, /* 0x3f800000 */
+pio4  =  7.8539812565e-01, /* 0x3f490fda */
+pio4lo=  3.7748947079e-08, /* 0x33222168 */
+T[] =  {
+  3.3333334327e-01, /* 0x3eaaaaab */
+  1.3333334029e-01, /* 0x3e088889 */
+  5.3968254477e-02, /* 0x3d5d0dd1 */
+  2.1869488060e-02, /* 0x3cb327a4 */
+  8.8632395491e-03, /* 0x3c11371f */
+  3.5920790397e-03, /* 0x3b6b6916 */
+  1.4562094584e-03, /* 0x3abede48 */
+  5.8804126456e-04, /* 0x3a1a26c8 */
+  2.4646313977e-04, /* 0x398137b9 */
+  7.8179444245e-05, /* 0x38a3f445 */
+  7.1407252108e-05, /* 0x3895c07a */
+ -1.8558637748e-05, /* 0xb79bae5f */
+  2.5907305826e-05, /* 0x37d95384 */
+};
+	float z,r,v,w,s;
+	int32_t ix,hx;
+	GET_FLOAT_WORDff(hx,x);
+	ix = hx&0x7fffffff;	/* high word of |x| */
+	if(ix<0x39000000)			/* x < 2**-13 */
+	    {if((int)x==0) {			/* generate inexact */
+		if((ix|(iy+1))==0) return one/fabsf(x);
+		else if (iy == 1)
+		  {
+		    math_check_force_underflow (x);
+		    return x;
+		  }
+		else
+		  return -one / x;
+	    }
+	    }
+	if(ix>=0x3f2ca140) { 			/* |x|>=0.6744 */
+	    if(hx<0) {x = -x; y = -y;}
+	    z = pio4-x;
+	    w = pio4lo-y;
+	    x = z+w; y = 0.0;
+	    if (fabsf (x) < 0x1p-13f)
+		return (1 - ((hx >> 30) & 2)) * iy * (1.0f - 2 * iy * x);
+	}
+	z	=  x*x;
+	w 	=  z*z;
+    /* Break x^5*(T[1]+x^2*T[2]+...) into
+     *	  x^5(T[1]+x^4*T[3]+...+x^20*T[11]) +
+     *	  x^5(x^2*(T[2]+x^4*T[4]+...+x^22*[T12]))
+     */
+	r = T[1]+w*(T[3]+w*(T[5]+w*(T[7]+w*(T[9]+w*T[11]))));
+	v = z*(T[2]+w*(T[4]+w*(T[6]+w*(T[8]+w*(T[10]+w*T[12])))));
+	s = z*x;
+	r = y + z*(s*(r+v)+y);
+	r += T[0]*s;
+	w = x+r;
+	if(ix>=0x3f2ca140) {
+	    v = (float)iy;
+	    return (float)(1-((hx>>30)&2))*(v-(float)2.0*(x-(w*w/(w+v)-r)));
+	}
+	if(iy==1) return w;
+	else {		/* if allow error up to 2 ulp,
+			   simply return -1.0/(x+r) here */
+     /*  compute -1.0/(x+r) accurately */
+	    float a,t;
+	    int32_t i;
+	    z  = w;
+	    GET_FLOAT_WORDff(i,z);
+	    SET_FLOAT_WORDff(z,i&0xfffff000);
+	    v  = r-(z - x); 	/* z+v = r+x */
+	    t = a  = -(float)1.0/w;	/* a = -1.0/w */
+	    GET_FLOAT_WORDff(i,t);
+	    SET_FLOAT_WORDff(t,i&0xfffff000);
+	    s  = (float)1.0+t*z;
+	    return t+a*(s+t*v);
+	}
+}
+
+
+static inline uint32_t
+abstop12 (float x)
+{
+  union {float a; uint32_t b;} f;
+  f.a = x;
+  return (f.b >> 20) & 0x7ff;
+}
+
+static inline double
+reduce_fast (double x, const sincos_t *p, int *np)
+{
+  double r;
+  /* Use scaled float to int conversion with explicit rounding.
+     hpi_inv is prescaled by 2^24 so the quadrant ends up in bits 24..31.
+     This avoids inaccuracies introduced by truncating negative values.  */
+  r = x * p->hpi_inv;
+  int n = ((int32_t)r + 0x800000) >> 24;
+  *np = n;
+  return x - n * p->hpi;
+}
+
+static inline int32_t
+rem_pio2f (float x, float *y)
+{
+  double dx = x;
+  int n;
+  const sincos_t *p = &__sincosf_table[0];
+
+  if ( (abstop12 (x) < abstop12 (120.0f)))
+    dx = reduce_fast (dx, p, &n);
+  else
+    {
+      llvm_32suf tmp;
+      tmp.f = x; 
+      uint32_t xi = tmp.u;
+      int sign = xi >> 31;
+
+      dx = reduce_large (xi, &n);
+      dx = sign ? -dx : dx;
+    }
+
+  y[0] = dx;
+  y[1] = dx - y[0];
+  return n;
+}
+
+float llvm_tanf(float x)
+{
+	float y[2],z=0.0;
+	int32_t n, ix;
+
+	GET_FLOAT_WORDff(ix,x);
+
+    /* |x| ~< pi/4 */
+	ix &= 0x7fffffff;
+	if(ix <= 0x3f490fda) return llvm__kernel_tanf(x,z,1);
+
+    /* tan(Inf or NaN) is NaN */
+	else if (ix>=0x7f800000) {
+	  // if (ix==0x7f800000)
+	  //   __set_errno (EDOM);
+	  return x-x;		/* NaN */
+	}
+
+    /* argument reduction needed */
+	else {
+	    n = rem_pio2f(x,y);
+	    return llvm__kernel_tanf(y[0],y[1],1-((n&1)<<1)); /*   1 -- n even
+							      -1 -- n odd */
+	}
+}
+
 template <class Abi>
 floatv<Abi> tan(floatv<Abi> x)
 {
-    Abi_32suf<Abi> x1, sum;
-    floatv<Abi> z, z2;
-    uintv<Abi> odd;
+    Abi_32suf<Abi> x1, sum, xu;
+    floatv<Abi> z, z2, res;
+    uintv<Abi> odd, cmp = 0;
     uint32_t AbsMask_f32_la = AbsMaskf, SignMask_f32_la = MASKf_sign;
     float 
     DP1_f32_la = 1.5703125,
@@ -13834,6 +14945,7 @@ floatv<Abi> tan(floatv<Abi> x)
     x1.f = x;
     uintv<Abi> sign = x1.u & s2v<uint32_t, uintv<Abi>>(SignMask_f32_la);
     x1.u = x1.u & AbsMask_f32_la;
+    
 
     sum.f = InvPiO2_f32_la * x1.f + ExpShift23;
     odd = static_simd_cast<uintv<Abi>>(static_simd_cast<floatv<Abi>>((sum.u) << 31));
@@ -13841,21 +14953,33 @@ floatv<Abi> tan(floatv<Abi> x)
 
     z = ((x1.f - sum.f * DP1_f32_la) - sum.f * DP2_f32_la) - sum.f * DP3_f32_la;
     z2 = z * z;
+    xu.f = z;
+    where((xu.u & AbsMask_f32_la) > 0x3f490fda, cmp) = 1;
 
     sum.f = (((((P1_f32_la * z2 + P2_f32_la) * z2 + P3_f32_la) * z2
      + P4_f32_la) * z2 + P5_f32_la) * z2 + P6_f32_la) * z2 * z + z;
 
     where(odd > 0, sum.f) = (1.0f) / sum.f;
     sum.u = (sum.u ^ sign ^ (odd));  
-    return sum.f;
+    res = sum.f;
+    where(x1.u >= 0x7f800000, res) = x - x;
+    if(reduce(cmp) != 0) [[unlikely]]
+    {
+      for(size_t i = 0; i < x.size(); i++)
+      {
+        if(cmp[i] != 0)
+            res[i] = llvm_tanf(x[i]);
+      }
+    }
+    return res;
 }
 
 template<class Abi>
 doublev<Abi> tan(doublev<Abi> x)
 {  
-    Abi_64suf<Abi> x1, sum;
-    doublev<Abi> z, z2;
-    ulongv<Abi> odd;
+    Abi_64suf<Abi> x1, sum, xu;
+    doublev<Abi> z, z2, res;
+    ulongv<Abi> odd, cmp = 0;
     unsigned long AbsMask_f64_la = AbsMask, SignMask_f64_la = MASK_sign;
     double InvPiO2_f64_la = 0.636619772367581343075535053490,
     P1_f64_la = -1.30936939181383777646E4,
@@ -13878,13 +15002,24 @@ doublev<Abi> tan(doublev<Abi> x)
 
     z = ((x1.f - sum.f * DP1_f64_la) - sum.f * DP2_f64_la) - sum.f * DP3_f64_la;
     z2 = z * z;
+    xu.f = z;
+    where((xu.u & AbsMask_f64_la) > 0x3FE921FB54442D18UL, cmp) = 1;
     doublev<Abi> p = (P1_f64_la * z2 + P2_f64_la) * z2 + P3_f64_la;
     doublev<Abi> q = (((z2 + Q1_f64_la) * z2 + Q2_f64_la) * z2 + Q3_f64_la) * z2 + Q4_f64_la;
     sum.f = z  +  z * z2 * p/q;
 
     where(odd > 0, sum.f) = (1.0f) / sum.f;
     sum.u = sum.u ^ sign ^ odd;
-    return( sum.f );
+    res = sum.f;
+    if(reduce(cmp) != 0) [[unlikely]]
+    {
+      for(size_t i = 0; i < x.size(); i++)
+      {
+        if(cmp[i] != 0)
+            res[i] = std::tan(x[i]);
+      }
+    }
+    return res;
 }
 
 #ifdef LDOUBLE_BINARY128
@@ -14792,6 +15927,8 @@ template<typename Abi> ldoublev<Abi> log2(ldoublev<Abi> x)
 
 template <class Abi>
 floatv<Abi> exp2(floatv<Abi> x){
+  floatv<Abi> res;
+  Abi_32suf<Abi> ux32;
   Abi_64suf<Abi> ux, us;
   doublev<Abi> xd, nr0, p, q, y, r, r2;
   ulongv<Abi> idx;
@@ -14812,7 +15949,16 @@ floatv<Abi> exp2(floatv<Abi> x){
   q = c3 * r + 1.;
   y = p * r2 + q;
   y = y * us.f;
-  return static_simd_cast<floatv<Abi>>(y);
+  res = static_simd_cast<floatv<Abi>>(y);
+  ux32.f = x;
+  uintv<Abi> axu12 = (ux32.u >> 20) & 0x7ffU;
+
+
+  where(x>=128.f, res) = s2v<float, floatv<Abi>>(LLVM_INF_32F);
+  where(x<=-150.f, res) = s2v<float, floatv<Abi>>(LLVM_FLT_MIN);
+  where((axu12 >= 0x7ffU), res) =  x;
+  where((ux32.u == 0xff800000U), res) = s2v<float, floatv<Abi>>(0.0f);
+  return res;
 }
 
 template <class Abi>
@@ -15300,54 +16446,44 @@ simd_div_t<llongv<Abi>> div(llongv<Abi> numer, llongv<Abi> denom){
 
 template <class Abi>
 simd_mask<float, Abi> isinf(floatv<Abi> x){
-  Abi_32suf<Abi> ux;
+  Abi_32suf<Abi> ux, uk;
   ux.f = x;
-  uintv<Abi> k = MASKf_exp;
-  return static_simd_cast<floatv<Abi>>(ux.u & AbsMaskf) == static_simd_cast<floatv<Abi>>(k);
+  uk.u = MASKf_exp;
+  return ((ux.u & AbsMaskf) == uk.u);
 }
 
 template <class Abi>
 simd_mask<double, Abi> isinf(doublev<Abi> x){
-  Abi_64suf<Abi> ux;
+  Abi_64suf<Abi> ux, uk;
   ux.f = x;
-  ulongv<Abi> k = MASK_exp;
-  return  static_simd_cast<doublev<Abi>>(ux.u & AbsMask) == static_simd_cast<doublev<Abi>>(k);
+  uk.u = MASK_exp;
+  return ((ux.u & AbsMask) == uk.u);
 }
 
 template <class Abi>
 simd_mask<long double, Abi> isinf(ldoublev<Abi> x){
-  Abi_128suf<Abi> ux;
+  Abi_128suf<Abi> ux, uk;
   ux.f = x;
   uint128v<Abi> k = Bottom15Mask;
   k <<= 112;
   uint128v<Abi> _absmask = 0x1;
-  _absmask = ~(_absmask<<127);
-  return static_simd_cast<ldoublev<Abi>>(ux.u & _absmask) == static_simd_cast<ldoublev<Abi>>(k);
+  uk.u = ~(_absmask<<127);
+  return ((ux.u & Bottom15Mask) == uk.u);
 }
 
 template <class Abi>
 simd_mask<float, Abi> isnan(floatv<Abi> x){
-  Abi_32suf<Abi> ux;
-  ux.f = x;
-  uintv<Abi> k = MASKf_exp;
-  return (!isinf(x)) && (static_simd_cast<floatv<Abi>>(ux.u & k) == static_simd_cast<floatv<Abi>>(k));
+  return (x != x);
 }
 
 template <class Abi>
 simd_mask<double, Abi> isnan(doublev<Abi> x){
-  Abi_64suf<Abi> ux;
-  ux.f = x;
-  ulongv<Abi> k = MASK_exp;
-  return (!isinf(x)) && (static_simd_cast<doublev<Abi>>(ux.u & k) == static_simd_cast<doublev<Abi>>(k));
+  return (x != x);
 }
 
 template <class Abi>
 simd_mask<long double, Abi> isnan(ldoublev<Abi> x){
-  Abi_128suf<Abi> ux;
-  ux.f = x;
-  uint128v<Abi> k = Bottom15Mask;
-  k <<= 112;
-  return (!isinf(x)) && (static_simd_cast<ldoublev<Abi>>(ux.u & k) == static_simd_cast<ldoublev<Abi>>(k));
+  return (x != x);
 }
 
 template <class Abi>
@@ -21254,11 +22390,12 @@ ldoublev<Abi> cbrt(ldoublev<Abi> x){
   return t;
 }
 #else
-template <class Abi> ldoublev<Abi> cbrt(ldoublev<Abi> x)
+template <class Abi> ldoublev<Abi> cbrt(ldoublev<Abi> x, ldoublev<Abi> y)
 {
-  doublev<Abi> src1, dst;
+  doublev<Abi> src1, src2, dst;
   src1 = static_simd_cast<doublev<Abi>>(x);
-  dst = cbrt(src1);
+  src2 = static_simd_cast<doublev<Abi>>(y);
+  dst = cbrt(src1, src2);
   return static_simd_cast<ldoublev<Abi>>(dst);
 }
 #endif
@@ -22246,11 +23383,12 @@ ldoublev<Abi> erf(ldoublev<Abi> x){
   return retv;
 }
 #else
-template <class Abi> ldoublev<Abi> erf(ldoublev<Abi> x)
+template <class Abi> ldoublev<Abi> erf(ldoublev<Abi> x, ldoublev<Abi> y)
 {
-  doublev<Abi> src1, dst;
+  doublev<Abi> src1, src2, dst;
   src1 = static_simd_cast<doublev<Abi>>(x);
-  dst = erf(src1);
+  src2 = static_simd_cast<doublev<Abi>>(y);
+  dst = erf(src1, src2);
   return static_simd_cast<ldoublev<Abi>>(dst);
 }
 #endif
@@ -22581,11 +23719,12 @@ ldoublev<Abi> erfc(ldoublev<Abi> x){
   return retv;
 }
 #else
-template <class Abi> ldoublev<Abi> erfc(ldoublev<Abi> x)
+template <class Abi> ldoublev<Abi> erfc(ldoublev<Abi> x, ldoublev<Abi> y)
 {
-  doublev<Abi> src1, dst;
+  doublev<Abi> src1, src2, dst;
   src1 = static_simd_cast<doublev<Abi>>(x);
-  dst = erfc(src1);
+  src2 = static_simd_cast<doublev<Abi>>(y);
+  dst = erfc(src1, src2);
   return static_simd_cast<ldoublev<Abi>>(dst);
 }
 #endif
@@ -23632,6 +24771,7 @@ ldoublev<Abi> lgamma(ldoublev<Abi> x){
   z = q * sin(pi * z);
 
   jdt2 = (z==0.0L);
+  // where(jd & (!jdt1) & jdt2, retv) = signgam * huge * huge;
   ldoublev<Abi> spc_value = x * neval_simd<Abi>(x, RN1, NRN1) / deval_simd<Abi>(x, RD1, NRD1);
   where(jd & (!jdt1) & jdt2, retv) = spc_value - log(x);
 
@@ -23864,11 +25004,12 @@ ldoublev<Abi> lgamma(ldoublev<Abi> x){
   return retv;
 }
 #else
-template <class Abi> ldoublev<Abi> lgamma(ldoublev<Abi> x)
+template <class Abi> ldoublev<Abi> lgamma(ldoublev<Abi> x, ldoublev<Abi> y)
 {
-  doublev<Abi> src1, dst;
+  doublev<Abi> src1, src2, dst;
   src1 = static_simd_cast<doublev<Abi>>(x);
-  dst = lgamma(src1);
+  src2 = static_simd_cast<doublev<Abi>>(y);
+  dst = lgamma(src1, src2);
   return static_simd_cast<ldoublev<Abi>>(dst);
 }
 #endif
@@ -23915,6 +25056,7 @@ floatv<Abi> tgamma(floatv<Abi> x){
   for(unsigned k = 0; k < sin_res.size(); ++k){
     sin_res[k] = std::sin(PI * res[k]);
   }
+  // where(jd11, factf) = -PI / sin(PI * res);
   where(jd11, factf) = -PI / sin_res;
   where(jd11, y) = y+1;
 
@@ -23981,7 +25123,12 @@ floatv<Abi> tgamma(floatv<Abi> x){
   sum = sum / y - y + SQRTPI;
   sum = sum + (y - 0.5) * log(y);
   where(jd41, res) = exp(sum);
-
+  // for(unsigned k = 0; k < sum.size(); ++k){
+  //   sum[i] = sum[i] + (y[i] - 0.5) * std::log(y[i]);
+  //   if(jd41[i])
+  //     res[i] = std::exp(sum[i]);
+  // }
+  
   jdtmp = x < 0;
 
   where(jd42 && jdtmp, retv) = LLVM_NAN_64F;
@@ -24187,8 +25334,8 @@ template <class Abi> doublev<Abi> tgamma(doublev<Abi> x){
   jd = change_simd_mask_type<unsigned int, double, Abi>(ix < (0x3ff-54)<<20);
   where(jd, y) = 1/x;
 
-  /* special cases */
-  /* tgamma(nan)=nan, tgamma(inf)=inf, tgamma(-inf)=nan with invalid */
+  // // /* special cases */
+  // /* tgamma(nan)=nan, tgamma(inf)=inf, tgamma(-inf)=nan with invalid */
   jd = change_simd_mask_type<unsigned int, double, Abi>(ix >= 0x7ff00000);
   where(jd, y)= x + LLVM_INF_64F;
 
@@ -24217,17 +25364,21 @@ template <class Abi> ldoublev<Abi> tgamma(ldoublev<Abi> x){
 
   ty = exp(lgamma(x));
 
+  // for (unsigned i = 0; i < x.size(); ++i){
+  //   ty[i] = std::exp(std::lgamma(x[i]));
+  // }
   where(!(jd1 | jd2 | jd3), retv) = ty;
   where(!(jd1 | jd2 | jd3) & jd4, retv) = -retv;
 
   return retv;
 }
 #else
-template <class Abi> ldoublev<Abi> tgamma(ldoublev<Abi> x)
+template <class Abi> ldoublev<Abi> tgamma(ldoublev<Abi> x, ldoublev<Abi> y)
 {
-  doublev<Abi> src1, dst;
+  doublev<Abi> src1, src2, dst;
   src1 = static_simd_cast<doublev<Abi>>(x);
-  dst = tgamma(src1);
+  src2 = static_simd_cast<doublev<Abi>>(y);
+  dst = tgamma(src1, src2);
   return static_simd_cast<ldoublev<Abi>>(dst);
 }
 #endif
@@ -24287,7 +25438,7 @@ template <class Abi> floatv<Abi> remquo(floatv<Abi> x, floatv<Abi> y, samesize<i
   floatv<Abi> spc_result1 = (x * y) / (x * y);
 
   auto spc1_f = simd_mask<float, Abi>(hy <= 0x7dffffff);
-  where(spc1_f, x) = static_simd_cast<floatv<Abi>>(fmod(static_simd_cast<doublev<Abi>>(x), static_simd_cast<doublev<Abi>>(8 * y)));
+  where(spc1_f, x) = fmod(x, (8 * y));
   auto spc2 = ((hx - hy) == 0);
   auto spc_mask3 = simd_mask<float, Abi>(spc2);
   auto spc2_1 = (qs == 0);
@@ -24364,7 +25515,7 @@ template <class Abi> doublev<Abi> remquo(doublev<Abi> x, doublev<Abi> y, samesiz
   doublev<Abi> spc_result1 = (x * y) / (x * y);
   
   auto spc1_f = simd_mask<double, Abi>(static_simd_cast<ulongv<Abi>>(hy) <=0x7fbfffff00000000UL);
-  where(spc1_f, x) = static_simd_cast<doublev<Abi>>(fmod(static_simd_cast<ldoublev<Abi>>(x), static_simd_cast<ldoublev<Abi>>(8 * y)));
+  where(spc1_f, x) = fmod(x, (8 * y));
 
 
   auto spc2 = ((static_simd_cast<ulongv<Abi>>(hx - hy)) | (lx - ly)) == 0;
@@ -25072,11 +26223,12 @@ template <class Abi> ldoublev<Abi> logb(ldoublev<Abi> x){
   return retv;
 }
 #else
-template <class Abi> ldoublev<Abi> logb(ldoublev<Abi> x)
+template <class Abi> ldoublev<Abi> logb(ldoublev<Abi> x, ldoublev<Abi> y)
 {
-  doublev<Abi> src1, dst;
+  doublev<Abi> src1, src2, dst;
   src1 = static_simd_cast<doublev<Abi>>(x);
-  dst = logb(src1);
+  src2 = static_simd_cast<doublev<Abi>>(y);
+  dst = logb(src1, src2);
   return static_simd_cast<ldoublev<Abi>>(dst);
 }
 #endif
@@ -25357,9 +26509,10 @@ template <class Abi> ldoublev<Abi> nexttoward(ldoublev<Abi> x, ldoublev<Abi> y)
 #else
 template <class Abi> ldoublev<Abi> nexttoward(ldoublev<Abi> x, ldoublev<Abi> y)
 {
-  doublev<Abi> src1, dst;
+  doublev<Abi> src1, src2, dst;
   src1 = static_simd_cast<doublev<Abi>>(x);
-  dst = nexttoward(src1, y);
+  src2 = static_simd_cast<doublev<Abi>>(y);
+  dst = nexttoward(src1, src2);
   return static_simd_cast<ldoublev<Abi>>(dst);
 }
 #endif
@@ -25769,7 +26922,7 @@ template <class Abi> ldoublev<Abi> pow(ldoublev<Abi> x, ldoublev<Abi> y)
 #endif
 
 
-#endif // _LIBCPP_STD_VER >= 17
+// #endif // _LIBCPP_STD_VER >= 17
 
 _LIBCPP_END_NAMESPACE_EXPERIMENTAL_SIMD
 

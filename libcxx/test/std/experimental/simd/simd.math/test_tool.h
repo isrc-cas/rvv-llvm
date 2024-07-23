@@ -2,7 +2,6 @@
 #include <iostream>
 #include <sys/time.h>
 #include <iomanip>
-#include <assert.h>
 
 // #define TEST_VECTOR_LEN_MIN_P 16
 // #define TEST_VECTOR_LEN_MAX_P 163850
@@ -73,12 +72,12 @@ static void compare_result(T1 *input1, T1 *input2, T2 *vml_out, T2 *openvml_i_ou
         //     std::cout << "vml_value is " << setprecision(40) << vec2_value << "  " << std::endl;
         // }
 
-        if(isnan((float)vec1_value) && isnan((float)vec2_value)){
+        if(isnan(vec1_value) && isnan(vec2_value)){
             // cout<< i<< "     !!!!!!!!!!!!!!!!!!\n";
             continue;
         }
 
-        if((isnan((float)vec1_value) ^ isnan((float)vec2_value)) == 1 && is_print)
+        if((isnan(vec1_value) ^ isnan(vec2_value)) == 1 && is_print)
         {
             std::cout << "ERROR: NAN";
             std::cout << "index is " << i <<"  ";
@@ -88,9 +87,10 @@ static void compare_result(T1 *input1, T1 *input2, T2 *vml_out, T2 *openvml_i_ou
             std::cout << "vml_value is " << vec2_value << "  " << std::endl;
             cout<< "!!!!!!!!!!!!!!!!!Failed!!!!!!!!!!!!!!!!!" << '\n';
             // ASSERT_TRUE(0);
+            assert(0);
         }
 
-        if((isinf((float)vec1_value) ^ isinf((float)vec2_value)) == 1 && is_print)
+        if((isinf(vec1_value) ^ isinf(vec2_value)) == 1 && is_print)
         {
             std::cout << "ERROR: INF";
             std::cout << "index is " << i <<"  ";
@@ -98,6 +98,7 @@ static void compare_result(T1 *input1, T1 *input2, T2 *vml_out, T2 *openvml_i_ou
             std::cout << "vml_value is " << vec2_value << "  " << std::endl;
             cout<< "!!!!!!!!!!!!!!!!!Failed!!!!!!!!!!!!!!!!!" << '\n';
             // ASSERT_TRUE(0);
+            assert(0);
         }
         
         if(vec1_value <= 1e-16 && vec2_value <= 1e-16)
@@ -185,149 +186,149 @@ static void compare_result(T1 *input1, T1 *input2, T2 *vml_out, T2 *openvml_i_ou
     if(accuracy_sum/len > precision)
     {
         cout<< "!!!!!!!!!!!!!!!!!Failed!!!!!!!!!!!!!!!!!" << '\n';
+            assert(0);
         // ASSERT_TRUE(0);
     }
 }
 
-// add by me
-// template<typename T1, typename T2, typename T3, typename T4>
-// static void compare_result(T1 *input1, T2 *input2, T3 *input3, T4 *vml_out, T4 *openvml_i_out, int len)
-// {
-//     double precision = sizeof(T2) == 4 ? 1e-7 : 2e-16;
-//     printf("\nLen:%-7d\t\n", len);
-//     // std::cout << setprecision(20) << vml_out[17706] << std::endl;
-//     // std::cout << setprecision(20) << openvml_i_out[17706] << std::endl;
+template<typename T1, typename T2, typename T3, typename T4>
+static void compare_result(T1 *input1, T2 *input2, T3 *input3, T4 *vml_out, T4 *openvml_i_out, int len)
+{
+    double precision = sizeof(T2) == 4 ? 1e-7 : 2e-16;
+    printf("\nLen:%-7d\t\n", len);
+    // std::cout << setprecision(20) << vml_out[17706] << std::endl;
+    // std::cout << setprecision(20) << openvml_i_out[17706] << std::endl;
 
-//     bool is_print = false;
+    bool is_print = false;
 
-//     double accuracy = 0.0;
-//     double accuracy_sum = 0.0;
-//     double accuracy_max = 0.0;
-//     // double max_ac = vml_out[0];
-//     // double max_ac_right = openvml_i_out[0];
-//     double max_ac = 0;
-//     double max_ac_right = 0;
-//     max_num = 0;
-//     int j = 0;//index of the array of max_ac_idx 
-//     for(int i = 0; i < len; i++)
-//     {
-//         T4 vec1_value = vml_out[i];
-//         T4 vec2_value = openvml_i_out[i];
+    double accuracy = 0.0;
+    double accuracy_sum = 0.0;
+    double accuracy_max = 0.0;
+    // double max_ac = vml_out[0];
+    // double max_ac_right = openvml_i_out[0];
+    double max_ac = 0;
+    double max_ac_right = 0;
+    max_num = 0;
+    int j = 0;//index of the array of max_ac_idx 
+    for(int i = 0; i < len; i++)
+    {
+        T4 vec1_value = vml_out[i];
+        T4 vec2_value = openvml_i_out[i];
 
-//         if(isnan((float)vec1_value) && isnan((float)vec2_value)){
-//             // cout<< i<< "     !!!!!!!!!!!!!!!!!!\n";
-//             continue;
-//         }
+        // if(isnan((float)vec1_value) && isnan((float)vec2_value)){
+        //     // cout<< i<< "     !!!!!!!!!!!!!!!!!!\n";
+        //     continue;
+        // }
 
-//         if((isnan((float)vec1_value) ^ isnan((float)vec2_value)) == 1 && is_print)
-//         {
-//             std::cout << "ERROR: NAN";
-//             std::cout << "index is " << i <<"  ";
-//             std::cout << "input1 is " << input1[i] <<"  ";
-//             std::cout << "input2 is " << input2[i] <<"  ";
-//             std::cout << "input3 is " << input3[i] <<"  ";
-//             std::cout << "llvm_value is " << vec1_value << "  ";
-//             std::cout << "vml_value is " << vec2_value << "  " << std::endl;
-//             cout<< "!!!!!!!!!!!!!!!!!Failed!!!!!!!!!!!!!!!!!" << '\n';
-//             // ASSERT_TRUE(0);
-//         }
+        if((isnan(vec1_value) ^ isnan(vec2_value)) == 1 && is_print)
+        {
+            std::cout << "ERROR: NAN";
+            std::cout << "index is " << i <<"  ";
+            std::cout << "input1 is " << input1[i] <<"  ";
+            std::cout << "input2 is " << input2[i] <<"  ";
+            std::cout << "input3 is " << input3[i] <<"  ";
+            std::cout << "llvm_value is " << vec1_value << "  ";
+            std::cout << "vml_value is " << vec2_value << "  " << std::endl;
+            cout<< "!!!!!!!!!!!!!!!!!Failed!!!!!!!!!!!!!!!!!" << '\n';
+            // ASSERT_TRUE(0);
+        }
 
-//         if((isinf((float)vec1_value) ^ isinf((float)vec2_value)) == 1 && is_print)
-//         {
-//             std::cout << "ERROR: INF";
-//             std::cout << "index is " << i <<"  ";
-//             std::cout << "llvm_value is " << vec1_value << "  ";
-//             std::cout << "vml_value is " << vec2_value << "  " << std::endl;
-//             cout<< "!!!!!!!!!!!!!!!!!Failed!!!!!!!!!!!!!!!!!" << '\n';
-//             // ASSERT_TRUE(0);
-//         }
+        if((isinf(vec1_value) ^ isinf(vec2_value)) == 1 && is_print)
+        {
+            std::cout << "ERROR: INF";
+            std::cout << "index is " << i <<"  ";
+            std::cout << "llvm_value is " << vec1_value << "  ";
+            std::cout << "vml_value is " << vec2_value << "  " << std::endl;
+            cout<< "!!!!!!!!!!!!!!!!!Failed!!!!!!!!!!!!!!!!!" << '\n';
+            // ASSERT_TRUE(0);
+        }
         
-//         if(vec1_value <= 1e-16 && vec2_value <= 1e-16)
-//             accuracy = 0;
-//         else 
-//             accuracy = (fabs(vec1_value - vec2_value)) / fabs(vec2_value);
-//         if(isnormal(accuracy))
-//             accuracy_sum += accuracy;
+        if(vec1_value <= 1e-16 && vec2_value <= 1e-16)
+            accuracy = 0;
+        else 
+            accuracy = (fabs(vec1_value - vec2_value)) / fabs(vec2_value);
+        if(isnormal(accuracy))
+            accuracy_sum += accuracy;
 
-//         // cout<< i<< "     ******************* "<< (vec1_value <= 1e-16) <<  (vec2_value <= 1e-16) << "\n";
-//         // printf("\taccuracy\t= %-.20lf\t\t \n", accuracy);
-//         if(accuracy > accuracy_max)
-//         {
-//             accuracy_max = accuracy;
-//             max_num = i;
-//             max_ac = vec1_value;
-//             max_ac_right = vec2_value;
-//         }
+        // cout<< i<< "     ******************* "<< (vec1_value <= 1e-16) <<  (vec2_value <= 1e-16) << "\n";
+        // printf("\taccuracy\t= %-.20lf\t\t \n", accuracy);
+        if(accuracy > accuracy_max)
+        {
+            accuracy_max = accuracy;
+            max_num = i;
+            max_ac = vec1_value;
+            max_ac_right = vec2_value;
+        }
         
-//         ///////test if input number is 1.xxx then accuracy greater than 1e-7 ?
-//         //record idx if output accuracy > precision(1e-7);
-//         if(accuracy > precision && j < 100000)
-//         {
-//             max_ac_idx[j++] = i;
-//         }
+        ///////test if input number is 1.xxx then accuracy greater than 1e-7 ?
+        //record idx if output accuracy > precision(1e-7);
+        if(accuracy > precision && j < 100000)
+        {
+            max_ac_idx[j++] = i;
+        }
 
-//         // if( accuracy > precision && is_print)
-//         // {
-//             //notPassed++;
-//             //printf("accuracy = %.15f", accuracy);
-//             //printf("\n%-7d\t", len);
-//             //printf("i = %d\n", i);
+        // if( accuracy > precision && is_print)
+        // {
+            //notPassed++;
+            //printf("accuracy = %.15f", accuracy);
+            //printf("\n%-7d\t", len);
+            //printf("i = %d\n", i);
            
-//             // if(std::is_same<T2, long double>::value){
-//             //     printf("\tllvm_in = %-.17Lf\t\t \n", input1[i]);
-//             //     printf("\tvml_in = %-.17lf\t\t \n", input2[i]);
-//             //     printf("\tllvm_out = %-.17lf\t\t \n", vec1_value);
-//             //     printf("\tvml_out = %-.17lf\t\t \n", vec2_value);
-//             //     printf("index = %d llvm_out = %.40lf accuracy = %.17lf\t",i, vec1_value, accuracy);
-//             //     //   printf("index = %d p_src = %.40f\t",i, pow(2.718281828,vec2_value));
-//             //     printf("\tllvm_out - vml_out = %-.40lf\t\t \n",vec1_value - vec2_value);
-//             // }else{
-//             //     printf("\tllvm_in = %-.17lf\t\t \n", input1[i]);
-//             //     printf("\tvml_in = %-.17lf\t\t \n", input2[i]);
-//             //     printf("\tllvm_out = %-.17lf\t\t \n", vec1_value);
-//             //     printf("\tvml_out = %-.17lf\t\t \n", vec2_value);
-//             //     printf("index = %d llvm_out = %.40f accuracy = %.17f\t",i, vec1_value, accuracy);
-//             //     //   printf("index = %d p_src = %.40f\t",i, pow(2.718281828,vec2_value));
-//             //     printf("\tllvm_out - vml_out = %-.40lf\t\t \n",vec1_value - vec2_value);
-//             // }
-//             // //ASSERT_TRUE(0);
-//             // cout<< "!!!!!!!!!!!!!!!!!Failed!!!!!!!!!!!!!!!!!" << '\n';
-//         // }
-//     }
+            // if(std::is_same<T2, long double>::value){
+            //     printf("\tllvm_in = %-.17Lf\t\t \n", input1[i]);
+            //     printf("\tvml_in = %-.17lf\t\t \n", input2[i]);
+            //     printf("\tllvm_out = %-.17lf\t\t \n", vec1_value);
+            //     printf("\tvml_out = %-.17lf\t\t \n", vec2_value);
+            //     printf("index = %d llvm_out = %.40lf accuracy = %.17lf\t",i, vec1_value, accuracy);
+            //     //   printf("index = %d p_src = %.40f\t",i, pow(2.718281828,vec2_value));
+            //     printf("\tllvm_out - vml_out = %-.40lf\t\t \n",vec1_value - vec2_value);
+            // }else{
+            //     printf("\tllvm_in = %-.17lf\t\t \n", input1[i]);
+            //     printf("\tvml_in = %-.17lf\t\t \n", input2[i]);
+            //     printf("\tllvm_out = %-.17lf\t\t \n", vec1_value);
+            //     printf("\tvml_out = %-.17lf\t\t \n", vec2_value);
+            //     printf("index = %d llvm_out = %.40f accuracy = %.17f\t",i, vec1_value, accuracy);
+            //     //   printf("index = %d p_src = %.40f\t",i, pow(2.718281828,vec2_value));
+            //     printf("\tllvm_out - vml_out = %-.40lf\t\t \n",vec1_value - vec2_value);
+            // }
+            // //ASSERT_TRUE(0);
+            // cout<< "!!!!!!!!!!!!!!!!!Failed!!!!!!!!!!!!!!!!!" << '\n';
+        // }
+    }
 
-//     // printf("\tprecision\t= %-.16lf\t\t\n", precision);
-//     // printf("\tave error\t= %-.16lf\t\t\n", accuracy_sum /len);
-//     // printf("\tmax error\t= %-.16lf\t\t\n", accuracy_max);
-//     // //print max accuracy output
-//     // printf("\tmax_err_idx\t= %d\n", max_num);
-//     // printf("\tmax_err llvm_out\t= %-.20lf\t\t \n", max_ac);
-//     // printf("\tmax_err std_out\t= %-.20lf\t\t \n", max_ac_right);
+    // printf("\tprecision\t= %-.16lf\t\t\n", precision);
+    // printf("\tave error\t= %-.16lf\t\t\n", accuracy_sum /len);
+    // printf("\tmax error\t= %-.16lf\t\t\n", accuracy_max);
+    // //print max accuracy output
+    // printf("\tmax_err_idx\t= %d\n", max_num);
+    // printf("\tmax_err llvm_out\t= %-.20lf\t\t \n", max_ac);
+    // printf("\tmax_err std_out\t= %-.20lf\t\t \n", max_ac_right);
 
-//     if(std::is_same<T2, long double>::value){
-//         printf("\tprecision\t= %-.16lf\t\t\n", precision);
-//         printf("\tave error\t= %-.16lf\t\t\n", accuracy_sum /len);
-//         printf("\tmax error\t= %-.16lf\t\t\n", accuracy_max);
-//         //print max accuracy output
-//         printf("\tmax_err_idx\t= %d\n", max_num);
-//         printf("\tmax_err llvm_out\t= %-.20lf\t\t \n", max_ac);
-//         printf("\tmax_err std_out\t= %-.20lf\t\t \n", max_ac_right);
-//      }else{
-//         printf("\tprecision\t= %-.16lf\t\t\n", precision);
-//         printf("\tave error\t= %-.16lf\t\t\n", accuracy_sum /len);
-//         printf("\tmax error\t= %-.16lf\t\t\n", accuracy_max);
-//         //print max accuracy output
-//         printf("\tmax_err_idx\t= %d\n", max_num);
-//         printf("\tmax_err llvm_out\t= %-.20lf\t\t \n", max_ac);
-//         printf("\tmax_err std_out\t= %-.20lf\t\t \n", max_ac_right);
-//      }
+    if(std::is_same<T2, long double>::value){
+        printf("\tprecision\t= %-.16lf\t\t\n", precision);
+        printf("\tave error\t= %-.16lf\t\t\n", accuracy_sum /len);
+        printf("\tmax error\t= %-.16lf\t\t\n", accuracy_max);
+        //print max accuracy output
+        printf("\tmax_err_idx\t= %d\n", max_num);
+        printf("\tmax_err llvm_out\t= %-.20lf\t\t \n", max_ac);
+        printf("\tmax_err std_out\t= %-.20lf\t\t \n", max_ac_right);
+     }else{
+        printf("\tprecision\t= %-.16lf\t\t\n", precision);
+        printf("\tave error\t= %-.16lf\t\t\n", accuracy_sum /len);
+        printf("\tmax error\t= %-.16lf\t\t\n", accuracy_max);
+        //print max accuracy output
+        printf("\tmax_err_idx\t= %d\n", max_num);
+        printf("\tmax_err llvm_out\t= %-.20lf\t\t \n", max_ac);
+        printf("\tmax_err std_out\t= %-.20lf\t\t \n", max_ac_right);
+     }
 
-//     //judge average accuracy
-//     if(accuracy_sum/len > precision)
-//     {
-//         cout<< "!!!!!!!!!!!!!!!!!Failed!!!!!!!!!!!!!!!!!" << '\n';
-//         // ASSERT_TRUE(0);
-//     }
-// }
+    //judge average accuracy
+    if(accuracy_sum/len > precision)
+    {
+        cout<< "!!!!!!!!!!!!!!!!!Failed!!!!!!!!!!!!!!!!!" << '\n';
+        // ASSERT_TRUE(0);
+    }
+}
 
 
 
@@ -545,7 +546,7 @@ static void data_init(T *pSrc1, T *pSrc2, unsigned int len, int is_abs, int type
         else if(typeid(T) == typeid(float))
         {
             float srcA[] = {-FLT_MIN, -0.00000000029, -INFINITY, -NAN, 0.00000005, -0.0,
-        FLT_MAX, FLT_MIN, -0.0, FLT_MIN, INFINITY, -INFINITY, -1.89999999999, NAN, FLT_MAX, -2.605286871738435e+38};
+        FLT_MAX, FLT_MAX, -0.0, FLT_MIN, INFINITY, -INFINITY, -1.89999999999, NAN, FLT_MAX, -2.605286871738435e+38};
         int Vlen = sizeof(srcA) / sizeof(srcA[0]); 
             for(int i = 0; i < Vlen; i++) 
             { 
@@ -859,7 +860,7 @@ static void test_accuracy_for_single(int element_per_data, int is_abs=0)
         llvm_dst  = (T2 *)malloc(sizeof(T2) * len);
         vml_src = (T1 *)malloc(sizeof(T1) * len);
         vml_dst  = (T2 *)malloc(sizeof(T2) * len);
-        data_init<T1>(vml_src, llvm_src, len, is_abs, 1);
+        data_init<T1>(vml_src, llvm_src, len, is_abs);
 
         //init array of max_ac_idx
         for(j = 0; j < 100000; j++)
@@ -884,66 +885,65 @@ static void test_accuracy_for_single(int element_per_data, int is_abs=0)
     }
 }
 
-// add by me 这里传参稍微改了一下
-template<typename T1, typename T2, 
-    void (*llvm_func)(int, const T1*, T2*), void (*vml_func)(int, const T1*, T2*)>
-static void test_performance_for_single(int element_per_data, int is_abs = 0)    
-{
-    T1 *llvm_src;
-    T1 *vml_src;
+// template<typename T1, typename T2, 
+//     void (*llvm_func)(int, const T1*, T2*), void (*vml_func)(int, const T1*, T2*)>
+// static void test_performance_for_single(int element_per_data, int is_abs = 0)    
+// {
+//     T1 *llvm_src;
+//     T1 *vml_src;
 
-    T2 *llvm_dst;
-    T2 *vml_dst;
+//     T2 *llvm_dst;
+//     T2 *vml_dst;
 
-    int i, k, len;
+//     int i, k, len;
 
-    double openvml_i_time = 0.0f, vml_time = 0.0f;
-    printf("\n\n\nperformance test\n"); 
-    printf("\tlen\tllvm \tstandard\n"); 
+//     double openvml_i_time = 0.0f, vml_time = 0.0f;
+//     printf("\n\n\nperformance test\n"); 
+//     printf("\tlen\tllvm \tstandard\n"); 
 
-    for(i =TEST_VECTOR_LEN_MIN_P; i < TEST_VECTOR_LEN_MAX_P; i=i*2) 
-    {
-        len = i * element_per_data;
-        openvml_i_time = 0.0f, vml_time = 0.0f;
-        for(k = 0; k < TIME_LOOPS; k++)
-        {
-            llvm_src = (T1 *)malloc(sizeof(T1) * len);
-            llvm_dst  = (T2 *)malloc(sizeof(T2) * len);
+//     for(i =TEST_VECTOR_LEN_MIN_P; i < TEST_VECTOR_LEN_MAX_P; i=i*2) 
+//     {
+//         len = i * element_per_data;
+//         openvml_i_time = 0.0f, vml_time = 0.0f;
+//         for(k = 0; k < TIME_LOOPS; k++)
+//         {
+//             llvm_src = (T1 *)malloc(sizeof(T1) * len);
+//             llvm_dst  = (T2 *)malloc(sizeof(T2) * len);
 
-            vml_src = (T1 *)malloc(sizeof(T1) * len);
-            vml_dst  = (T2 *)malloc(sizeof(T2) * len);
+//             vml_src = (T1 *)malloc(sizeof(T1) * len);
+//             vml_dst  = (T2 *)malloc(sizeof(T2) * len);
 
-            data_init<T1>(vml_src, llvm_src, len, is_abs, 1);
+//             data_init<T1>(vml_src, llvm_src, len, is_abs, 1);
 
-            {
-                struct timeval tvs, tve;
+//             {
+//                 struct timeval tvs, tve;
 
-                gettimeofday(&tvs, NULL);
-                llvm_func(i, (T1 *)llvm_src,  (T2 *)llvm_dst);
-                gettimeofday(&tve, NULL);
+//                 gettimeofday(&tvs, NULL);
+//                 llvm_func(i, (T1 *)llvm_src,  (T2 *)llvm_dst);
+//                 gettimeofday(&tve, NULL);
 
-                vml_time += calc_time(tvs, tve);
-            }
+//                 vml_time += calc_time(tvs, tve);
+//             }
 
-            {
-                struct timeval tvs, tve;
+//             {
+//                 struct timeval tvs, tve;
 
-                gettimeofday(&tvs, NULL);
-                vml_func(i, (T1 *)vml_src, (T2 *)vml_dst);
-                gettimeofday(&tve, NULL);
+//                 gettimeofday(&tvs, NULL);
+//                 vml_func(i, (T1 *)vml_src, (T2 *)vml_dst);
+//                 gettimeofday(&tve, NULL);
 
-                openvml_i_time += calc_time(tvs, tve);
-            }
+//                 openvml_i_time += calc_time(tvs, tve);
+//             }
 
-            free(llvm_src);
-            free(llvm_dst);
+//             free(llvm_src);
+//             free(llvm_dst);
 
-            free(vml_src);
-            free(vml_dst);
-        }
-        printf("\t%d\t%f\t%f\n", len, vml_time/k, openvml_i_time/k); 
-    }
-}
+//             free(vml_src);
+//             free(vml_dst);
+//         }
+//         printf("\t%d\t%f\t%f\n", len, vml_time/k, openvml_i_time/k); 
+//     }
+// }
 
 // template<typename T, typename T1, typename T2, 
 //     void (*llvm_func)(int, const T*, T1*, T2*), void (*vml_func)(int, const T*, T1*, T2*)>
@@ -1043,7 +1043,7 @@ static void test_accuracy_for_in2out1(int element_per_data, int is_abs = 0)
         vml_dst  = (T2 *)malloc(sizeof(T2) * len);
 
         data_init<T>(llvm_src, vml_src, len, is_abs, 1);
-        data_init<T1>(llvm_src2, vml_src2, len, is_abs, 1);
+        data_init<T1>(llvm_src2, vml_src2, len, is_abs, 2);
         
         int j;
         //init array of max_ac_idx
@@ -1072,10 +1072,6 @@ static void test_accuracy_for_in2out1(int element_per_data, int is_abs = 0)
     }
 }
 
-// add by me
-
-
-// whz
 template<typename T, typename T1, typename T2, typename T3, 
          void (*llvm_func)(int, const T*, T1*, T2*, T3*), void (*vml_func)(int, const  T*, T1*, T2*, T3*)>
 static void test_accuracy_for_in3out1(int element_per_data, int is_abs = 0)    
@@ -1141,83 +1137,6 @@ static void test_accuracy_for_in3out1(int element_per_data, int is_abs = 0)
     }
 }
 
-template<typename T, typename T1, typename T2, typename T3, 
-    void (*llvm_func)(int, const T*, T1*, T2*, T3*), void (*vml_func)(int, const T*, T1*, T2*, T3*)>
-static void test_performance_for_in3out1(int element_per_data, int is_abs = 0)    
-{
-    T *llvm_src;
-    T *vml_src;
-
-    T1 *llvm_src2;
-    T1 *vml_src2;
-
-    T2 *llvm_src3;
-    T2 *vml_src3;
-
-    T3 *llvm_dst;
-    T3 *vml_dst;
-
-    int i, k, len;
-
-    double openvml_i_time = 0.0f, vml_time = 0.0f;
-
-    printf("\n\n\nperformance test\n"); 
-    printf("\tlen\tllvm \tstandard\n"); 
-
-    for(i =TEST_VECTOR_LEN_MIN_P; i < TEST_VECTOR_LEN_MAX_P; i=i*2) 
-    {
-        len = i * element_per_data;
-        llvm_src = (T *)malloc(sizeof(T) * len);
-        llvm_src2 = (T1 *)malloc(sizeof(T1) * len);
-        llvm_src3 = (T2 *)malloc(sizeof(T2) * len);
-        llvm_dst  = (T3 *)malloc(sizeof(T3) * len);
-
-        vml_src = (T *)malloc(sizeof(T) * len);
-        vml_src2 = (T1 *)malloc(sizeof(T1) * len);
-        vml_src3 = (T2 *)malloc(sizeof(T2) * len);
-        vml_dst  = (T2 *)malloc(sizeof(T2) * len);
-
-        data_init<T>(llvm_src, vml_src, len, is_abs, 1);
-        data_init<T1>(llvm_src2, vml_src2, len, is_abs, 1);
-        data_init<T2>(llvm_src3, vml_src3, len, is_abs, 1);
-
-        openvml_i_time = 0.0f, vml_time = 0.0f;
-        for(k = 0; k < TIME_LOOPS; k++)
-        {
-            {
-                struct timeval tvs, tve;
-
-                gettimeofday(&tvs, NULL);
-                vml_func(i, (T *)vml_src, (T1 *)vml_src2, (T2 *)vml_src3, (T3 *)vml_dst);
-                gettimeofday(&tve, NULL);
-
-                openvml_i_time += calc_time(tvs, tve);
-            }
-
-            {
-                struct timeval tvs, tve;
-
-                gettimeofday(&tvs, NULL);
-                llvm_func(i, (T *)llvm_src, (T1 *)llvm_src2, (T2 *)llvm_src3, (T2 *)llvm_dst);
-                gettimeofday(&tve, NULL);
-
-                vml_time += calc_time(tvs, tve);
-            }
-        }
-
-        free(llvm_src);
-        free(llvm_src2);
-        free(llvm_src3);
-        free(llvm_dst);
-
-        free(vml_src);
-        free(vml_src2);
-        free(vml_src3);
-        free(vml_dst);
-        printf("\t%d\t%f\t%f\n", len, vml_time/k, openvml_i_time/k);
-    }
-}
-
 
 template<typename T, typename T1, typename T2, typename T3, 
          void (*llvm_func)(int, T*, T1*, T2*, T3*), void (*vml_func)(int, T*, T1*, T2*, T3*)>
@@ -1253,14 +1172,12 @@ static void test_accuracy_for_in3out1_2(int element_per_data, int is_abs = 0)
 
         data_init<T>(llvm_src, vml_src, len, is_abs, 1);
         data_init<T1>(llvm_src2, vml_src2, len, is_abs, 2);
-        data_init<T2>(llvm_src3, vml_src3, len, is_abs);
+        data_init<T2>(llvm_src3, vml_src3, len, is_abs, 3);
+
         int j;
         //init array of max_ac_idx
         for(j = 0; j < 100000; j++)
             max_ac_idx[j] = -1;
-
-        llvm_src[0] = vml_src[0] = -1.8999999999999999104;
-        llvm_src2[0] = vml_src2[0] = INFINITY;
 
 
         // cout << *vml_src << "*****1*****************" << *llvm_src << "*****************" << *vml_src2 << "*****************" << *llvm_src2 << "*****************" << *vml_dst << "*****************" << *llvm_dst << endl;
@@ -1268,11 +1185,11 @@ static void test_accuracy_for_in3out1_2(int element_per_data, int is_abs = 0)
         // cout << *vml_src << "*****2*****************" << *llvm_src << "*****************" << *vml_src2 << "*****************" << *llvm_src2 << "*****************" << *vml_dst << "*****************" << *llvm_dst << endl;
         llvm_func(i, (T *)llvm_src, (T1 *)llvm_src2, (T2 *)llvm_src3, (T3 *)llvm_dst);
         // cout << *vml_src << "*****3*****************" << *llvm_src << "*****************" << *vml_src2 << "*****************" << *llvm_src2 << "*****************" << *vml_dst << "*****************" << *llvm_dst << endl;
-         
-        compare_result<T, T2>(vml_src, llvm_src, llvm_src3, vml_src3, len);
-        compare_result<T, T3>(vml_src, llvm_src, llvm_dst, vml_dst, len);
 
-        
+        compare_result<T, T1, T2, T2>(vml_src, vml_src2, vml_src3, llvm_src3, vml_src3, len);
+        compare_result<T, T1, T2, T3>(vml_src, vml_src2, vml_src3, llvm_dst, vml_dst, len);
+
+
         for(j = 0; (j < 100000) && (max_ac_idx[j] != -1); j++);
         // printf("\tmax_err input\t= %.20f\n\tthere are %d results exceed the accuracy limit!!!\n", llvm_src[max_num], j);
 
@@ -1286,149 +1203,149 @@ static void test_accuracy_for_in3out1_2(int element_per_data, int is_abs = 0)
     }
 }
 
-template<typename T, typename T1, typename T2, typename T3,
-    void (*llvm_func)(int, T*, T1*, T2*, T3*), void (*vml_func)(int, T*, T1*, T2*, T3*)>
-static void test_performance_for_in3out1_2(int element_per_data, int is_abs = 0)    
-{
-    T *llvm_src;
-    T *vml_src;
+// template<typename T, typename T1, typename T2, typename T3,
+//     void (*llvm_func)(int, T*, T1*, T2*, T3*), void (*vml_func)(int, T*, T1*, T2*, T3*)>
+// static void test_performance_for_in3out1_2(int element_per_data, int is_abs = 0)    
+// {
+//     T *llvm_src;
+//     T *vml_src;
 
-    T1 *llvm_src1;
-    T1 *vml_src1;
+//     T1 *llvm_src1;
+//     T1 *vml_src1;
 
-    T2 *llvm_dst1;
-    T2 *vml_dst1;
+//     T2 *llvm_dst1;
+//     T2 *vml_dst1;
 
-    T3 *llvm_dst2;
-    T3 *vml_dst2;
+//     T3 *llvm_dst2;
+//     T3 *vml_dst2;
 
-    int i, k, len;
+//     int i, k, len;
 
-    double openvml_i_time = 0.0f, vml_time = 0.0f;
-    printf("\n\n\nperformance test\n"); 
-    printf("\tlen\topenvml  \tstandard\n"); 
+//     double openvml_i_time = 0.0f, vml_time = 0.0f;
+//     printf("\n\n\nperformance test\n"); 
+//     printf("\tlen\topenvml  \tstandard\n"); 
 
-    for(i =TEST_VECTOR_LEN_MIN_P; i < TEST_VECTOR_LEN_MAX_P; i=i*2) 
-    {
-        len = i * element_per_data;
-        llvm_src = (T *)malloc(sizeof(T) * len);
-        llvm_src1 = (T1 *)malloc(sizeof(T1) * len);
-        llvm_dst1  = (T2 *)malloc(sizeof(T2) * len);
-        llvm_dst2  = (T3 *)malloc(sizeof(T3) * len);
+//     for(i =TEST_VECTOR_LEN_MIN_P; i < TEST_VECTOR_LEN_MAX_P; i=i*2) 
+//     {
+//         len = i * element_per_data;
+//         llvm_src = (T *)malloc(sizeof(T) * len);
+//         llvm_src1 = (T1 *)malloc(sizeof(T1) * len);
+//         llvm_dst1  = (T2 *)malloc(sizeof(T2) * len);
+//         llvm_dst2  = (T3 *)malloc(sizeof(T3) * len);
 
-        vml_src = (T *)malloc(sizeof(T) * len);
-        vml_src1 = (T1 *)malloc(sizeof(T1) * len);
-        vml_dst1  = (T2 *)malloc(sizeof(T2) * len);
-        vml_dst2  = (T3 *)malloc(sizeof(T3) * len);
+//         vml_src = (T *)malloc(sizeof(T) * len);
+//         vml_src1 = (T1 *)malloc(sizeof(T1) * len);
+//         vml_dst1  = (T2 *)malloc(sizeof(T2) * len);
+//         vml_dst2  = (T3 *)malloc(sizeof(T3) * len);
 
-        data_init<T>(llvm_src, vml_src, len, is_abs, 1);
-        data_init<T1>(llvm_src1, vml_src1, len, is_abs, 2);
-        data_init<T2>(llvm_dst1, vml_dst1, len, is_abs, 3);
+//         data_init<T>(llvm_src, vml_src, len, is_abs, 1);
+//         data_init<T1>(llvm_src1, vml_src1, len, is_abs, 2);
+//         data_init<T2>(llvm_dst1, vml_dst1, len, is_abs, 3);
 
 
-        openvml_i_time = 0.0f, vml_time = 0.0f;
-        for(k = 0; k < TIME_LOOPS; k++)
-        {
-            {
-                struct timeval tvs, tve;
+//         openvml_i_time = 0.0f, vml_time = 0.0f;
+//         for(k = 0; k < TIME_LOOPS; k++)
+//         {
+//             {
+//                 struct timeval tvs, tve;
 
-                gettimeofday(&tvs, NULL);
-                llvm_func(i, (T *)llvm_src, (T1 *)llvm_src1, (T2 *)llvm_dst1, (T3 *)llvm_dst2);
-                gettimeofday(&tve, NULL);
+//                 gettimeofday(&tvs, NULL);
+//                 llvm_func(i, (T *)llvm_src, (T1 *)llvm_src1, (T2 *)llvm_dst1, (T3 *)llvm_dst2);
+//                 gettimeofday(&tve, NULL);
 
-                vml_time += calc_time(tvs, tve);
-            }
+//                 vml_time += calc_time(tvs, tve);
+//             }
 
-            {
-                struct timeval tvs, tve;
+//             {
+//                 struct timeval tvs, tve;
 
-                gettimeofday(&tvs, NULL);
-                llvm_func(i, (T *)vml_src, (T1 *)vml_src1, (T2 *)vml_dst1, (T3 *)vml_dst2);
-                gettimeofday(&tve, NULL);
+//                 gettimeofday(&tvs, NULL);
+//                 llvm_func(i, (T *)vml_src, (T1 *)vml_src1, (T2 *)vml_dst1, (T3 *)vml_dst2);
+//                 gettimeofday(&tve, NULL);
 
-                openvml_i_time += calc_time(tvs, tve);
-            }
-        }
+//                 openvml_i_time += calc_time(tvs, tve);
+//             }
+//         }
 
-        free(llvm_src);
-        free(llvm_dst1);
-        free(llvm_dst2);
+//         free(llvm_src);
+//         free(llvm_dst1);
+//         free(llvm_dst2);
 
-        free(vml_src);
-        free(vml_dst1);
-        free(vml_dst2);
-        printf("\t%d\t%f\t%f\n", len, vml_time/k, openvml_i_time/k); 
-    }
-}
+//         free(vml_src);
+//         free(vml_dst1);
+//         free(vml_dst2);
+//         printf("\t%d\t%f\t%f\n", len, vml_time/k, openvml_i_time/k); 
+//     }
+// }
 
-template<typename T, typename T1, typename T2, 
-    void (*llvm_func)(int, const T*, T1*, T2*), void (*vml_func)(int, const T*, T1*, T2*)>
-static void test_performance_for_in2out1(int element_per_data, int is_abs = 0)    
-{
-    T *llvm_src;
-    T *vml_src;
+// template<typename T, typename T1, typename T2, 
+//     void (*llvm_func)(int, const T*, T1*, T2*), void (*vml_func)(int, const T*, T1*, T2*)>
+// static void test_performance_for_in2out1(int element_per_data, int is_abs = 0)    
+// {
+//     T *llvm_src;
+//     T *vml_src;
 
-    T1 *llvm_src2;
-    T1 *vml_src2;
+//     T1 *llvm_src2;
+//     T1 *vml_src2;
 
-    T2 *llvm_dst;
-    T2 *vml_dst;
+//     T2 *llvm_dst;
+//     T2 *vml_dst;
 
-    int i, k, len;
+//     int i, k, len;
 
-    double openvml_i_time = 0.0f, vml_time = 0.0f;
+//     double openvml_i_time = 0.0f, vml_time = 0.0f;
 
-    printf("\n\n\nperformance test\n"); 
-    printf("\tlen\tllvm \tstandard\n"); 
+//     printf("\n\n\nperformance test\n"); 
+//     printf("\tlen\tllvm \tstandard\n"); 
 
-    for(i =TEST_VECTOR_LEN_MIN_P; i < TEST_VECTOR_LEN_MAX_P; i=i*2) 
-    {
-        len = i * element_per_data;
-        llvm_src = (T *)malloc(sizeof(T) * len);
-        llvm_src2 = (T1 *)malloc(sizeof(T1) * len);
-        llvm_dst  = (T2 *)malloc(sizeof(T2) * len);
+//     for(i =TEST_VECTOR_LEN_MIN_P; i < TEST_VECTOR_LEN_MAX_P; i=i*2) 
+//     {
+//         len = i * element_per_data;
+//         llvm_src = (T *)malloc(sizeof(T) * len);
+//         llvm_src2 = (T1 *)malloc(sizeof(T1) * len);
+//         llvm_dst  = (T2 *)malloc(sizeof(T2) * len);
 
-        vml_src = (T *)malloc(sizeof(T) * len);
-        vml_src2 = (T1 *)malloc(sizeof(T1) * len);
-        vml_dst  = (T2 *)malloc(sizeof(T2) * len);
+//         vml_src = (T *)malloc(sizeof(T) * len);
+//         vml_src2 = (T1 *)malloc(sizeof(T1) * len);
+//         vml_dst  = (T2 *)malloc(sizeof(T2) * len);
 
-        data_init<T>(llvm_src, vml_src, len, is_abs, 1);
-        data_init<T1>(llvm_src2, vml_src2, len, is_abs, 1);
+//         data_init<T>(llvm_src, vml_src, len, is_abs, 1);
+//         data_init<T1>(llvm_src2, vml_src2, len, is_abs, 1);
 
-        openvml_i_time = 0.0f, vml_time = 0.0f;
-        for(k = 0; k < TIME_LOOPS; k++)
-        {
-            {
-                struct timeval tvs, tve;
+//         openvml_i_time = 0.0f, vml_time = 0.0f;
+//         for(k = 0; k < TIME_LOOPS; k++)
+//         {
+//             {
+//                 struct timeval tvs, tve;
 
-                gettimeofday(&tvs, NULL);
-                vml_func(i, (T *)vml_src, (T1 *)vml_src2, (T2 *)vml_dst);
-                gettimeofday(&tve, NULL);
+//                 gettimeofday(&tvs, NULL);
+//                 vml_func(i, (T *)vml_src, (T1 *)vml_src2, (T2 *)vml_dst);
+//                 gettimeofday(&tve, NULL);
 
-                openvml_i_time += calc_time(tvs, tve);
-            }
+//                 openvml_i_time += calc_time(tvs, tve);
+//             }
 
-            {
-                struct timeval tvs, tve;
+//             {
+//                 struct timeval tvs, tve;
 
-                gettimeofday(&tvs, NULL);
-                llvm_func(i, (T *)llvm_src, (T1 *)llvm_src2, (T2 *)llvm_dst);
-                gettimeofday(&tve, NULL);
+//                 gettimeofday(&tvs, NULL);
+//                 llvm_func(i, (T *)llvm_src, (T1 *)llvm_src2, (T2 *)llvm_dst);
+//                 gettimeofday(&tve, NULL);
 
-                vml_time += calc_time(tvs, tve);
-            }
-        }
+//                 vml_time += calc_time(tvs, tve);
+//             }
+//         }
 
-        free(llvm_src);
-        free(llvm_src2);
-        free(llvm_dst);
+//         free(llvm_src);
+//         free(llvm_src2);
+//         free(llvm_dst);
 
-        free(vml_src);
-        free(vml_src2);
-        free(vml_dst);
-        printf("\t%d\t%f\t%f\n", len, vml_time/k, openvml_i_time/k);
-    }
-}
+//         free(vml_src);
+//         free(vml_src2);
+//         free(vml_dst);
+//         printf("\t%d\t%f\t%f\n", len, vml_time/k, openvml_i_time/k);
+//     }
+// }
 
 
 template<typename T, typename T1, typename T2, 
@@ -1488,74 +1405,74 @@ static void test_accuracy_for_in2out1_2(int element_per_data, int is_abs = 0)
     }
 }
 
-template<typename T, typename T1, typename T2, 
-    void (*llvm_func)(int, const T*, T1*, T2*), void (*vml_func)(int, const T*, T1*, T2*)>
-static void test_performance_for_in2out1_2(int element_per_data, int is_abs = 0)    
-{
-    T *llvm_src;
-    T *vml_src;
+// template<typename T, typename T1, typename T2, 
+//     void (*llvm_func)(int, const T*, T1*, T2*), void (*vml_func)(int, const T*, T1*, T2*)>
+// static void test_performance_for_in2out1_2(int element_per_data, int is_abs = 0)    
+// {
+//     T *llvm_src;
+//     T *vml_src;
 
-    T1 *llvm_dst1;
-    T1 *vml_dst1;
+//     T1 *llvm_dst1;
+//     T1 *vml_dst1;
 
-    T2 *llvm_dst2;
+//     T2 *llvm_dst2;
 
-    T2 *vml_dst2;
+//     T2 *vml_dst2;
 
-    int i, k, len;
+//     int i, k, len;
 
-    double openvml_i_time = 0.0f, vml_time = 0.0f;
-    printf("\n\n\nperformance test\n"); 
-    printf("\tlen\topenvml  \tstandard\n"); 
+//     double openvml_i_time = 0.0f, vml_time = 0.0f;
+//     printf("\n\n\nperformance test\n"); 
+//     printf("\tlen\topenvml  \tstandard\n"); 
 
-    for(i =TEST_VECTOR_LEN_MIN_P; i < TEST_VECTOR_LEN_MAX_P; i=i*2) 
-    {
-        len = i * element_per_data;
-        llvm_src = (T *)malloc(sizeof(T) * len);
-        llvm_dst1 = (T1 *)malloc(sizeof(T1) * len);
-        llvm_dst2  = (T2 *)malloc(sizeof(T2) * len);
+//     for(i =TEST_VECTOR_LEN_MIN_P; i < TEST_VECTOR_LEN_MAX_P; i=i*2) 
+//     {
+//         len = i * element_per_data;
+//         llvm_src = (T *)malloc(sizeof(T) * len);
+//         llvm_dst1 = (T1 *)malloc(sizeof(T1) * len);
+//         llvm_dst2  = (T2 *)malloc(sizeof(T2) * len);
 
-        vml_src = (T *)malloc(sizeof(T) * len);
-        vml_dst1 = (T1 *)malloc(sizeof(T1) * len);
-        vml_dst2  = (T2 *)malloc(sizeof(T2) * len);
+//         vml_src = (T *)malloc(sizeof(T) * len);
+//         vml_dst1 = (T1 *)malloc(sizeof(T1) * len);
+//         vml_dst2  = (T2 *)malloc(sizeof(T2) * len);
 
-        data_init<T>(llvm_src, vml_src, len, is_abs, 1);
+//         data_init<T>(llvm_src, vml_src, len, is_abs, 1);
 
 
-        openvml_i_time = 0.0f, vml_time = 0.0f;
-        for(k = 0; k < TIME_LOOPS; k++)
-        {
-            {
-                struct timeval tvs, tve;
+//         openvml_i_time = 0.0f, vml_time = 0.0f;
+//         for(k = 0; k < TIME_LOOPS; k++)
+//         {
+//             {
+//                 struct timeval tvs, tve;
 
-                gettimeofday(&tvs, NULL);
-                llvm_func(i, (T *)llvm_src, (T1 *)llvm_dst1, (T2 *)llvm_dst2);
-                gettimeofday(&tve, NULL);
+//                 gettimeofday(&tvs, NULL);
+//                 llvm_func(i, (T *)llvm_src, (T1 *)llvm_dst1, (T2 *)llvm_dst2);
+//                 gettimeofday(&tve, NULL);
 
-                vml_time += calc_time(tvs, tve);
-            }
+//                 vml_time += calc_time(tvs, tve);
+//             }
 
-            {
-                struct timeval tvs, tve;
+//             {
+//                 struct timeval tvs, tve;
 
-                gettimeofday(&tvs, NULL);
-                vml_func(i, (T *)vml_src, (T1 *)vml_dst1, (T2 *)vml_dst2);
-                gettimeofday(&tve, NULL);
+//                 gettimeofday(&tvs, NULL);
+//                 vml_func(i, (T *)vml_src, (T1 *)vml_dst1, (T2 *)vml_dst2);
+//                 gettimeofday(&tve, NULL);
 
-                openvml_i_time += calc_time(tvs, tve);
-            }
-        }
+//                 openvml_i_time += calc_time(tvs, tve);
+//             }
+//         }
 
-        free(llvm_src);
-        free(llvm_dst1);
-        free(llvm_dst2);
+//         free(llvm_src);
+//         free(llvm_dst1);
+//         free(llvm_dst2);
 
-        free(vml_src);
-        free(vml_dst1);
-        free(vml_dst2);
-        printf("\t%d\t%f\t%f\n", len, vml_time/k, openvml_i_time/k); 
-    }
-}
+//         free(vml_src);
+//         free(vml_dst1);
+//         free(vml_dst2);
+//         printf("\t%d\t%f\t%f\n", len, vml_time/k, openvml_i_time/k); 
+//     }
+// }
 
 
 
@@ -1567,6 +1484,7 @@ template<typename T, typename T1>
 static void data_init(T *pSrc1, T1 *pSrc2, unsigned int len, bool is_abs)
 {
     unsigned int i;
+
     for(i = 0; i < len ; i++)
     {
         T data;
@@ -1581,6 +1499,7 @@ static void data_init(T *pSrc1, T1 *pSrc2, unsigned int len, bool is_abs)
         pSrc1[i] = data;
         pSrc2[i] = data;
     }
+
 }
 
 
@@ -1781,7 +1700,6 @@ static void compare_result_ulp(T3 *vml_out, T4 *openvml_i_out, int len)
   int fail = 0;
   int print = 0;
 
-  // 这里写这个的原因是提醒一下，原始实现中本来计算结果应该在r模式下，然后后面的ulp相关计算是在FE_TONEAREST下的
   int r = fegetround();
   if (r != FE_TONEAREST)
     fesetround (FE_TONEAREST);
@@ -1839,24 +1757,6 @@ static void compare_result_ulp(T3 *vml_out, T4 *openvml_i_out, int len)
                 assert(0);
             }
 
-            // TODO:env还没讨论
-            // int diff = fenv ? exgot ^ want.ex : 0; 
-            // if (fenv && (diff & ~want.ex_may))
-            //   {
-            //     if (!fail)
-            // {
-            //   fail = 1;
-            //   cntfail++;
-            // }
-            //     T(printcall) (f, a);
-            //     printf (" is %a %+g ulp, got except 0x%0x", want.y, want.tail,
-            //       exgot);
-            //     if (diff & exgot)
-            // printf (" wrongly set: 0x%x", diff & exgot);
-            //     if (diff & ~exgot)
-            // printf (" wrongly clear: 0x%x", diff & ~exgot);
-            //     putchar ('\n');
-            //   }
         }
       }
       if (cnt >= (uint64_t)(len))
@@ -1879,12 +1779,11 @@ static void compare_result_ulp(T3 *vml_out, T4 *openvml_i_out, int len)
 	  (unsigned long long) cntfail, 100.0 * cntfail / cc);
     std::cout << "max err vec1_value is " << fixed << setprecision(60) << vec1_max_valueidx << std::endl;
     std::cout << "max err vec2_value is " << fixed << setprecision(60) << vec2_max_valueidx << std::endl;
+    std::cout << "max err idx is " << (int)max_idx << std::endl;
 
     if (r != FE_TONEAREST)
         fesetround (r);
-    // if(fail) 
-    // if((avg_ulp / cnt) > ULPERR)
-    if((maxerr) > 10)
+    if((avg_ulp / cnt) > ULPERR)
     {
         std::cout << "first err vec1_value is " << vec1_valueidx << "\t  turn uint is " << std::bitset<64>(asuint(vec1_valueidx)) << endl;
         std::cout << "first err vec2_value is " << (T3)vec2_valueidx << "\t  turn uint is " << std::bitset<64>(asuint((T3)vec2_valueidx)) << endl;
@@ -1898,6 +1797,7 @@ static void compare_result_ulp(T3 *vml_out, T4 *openvml_i_out, int len)
         std::cout << "avg ulp is " << avg_ulp / cnt << std::endl;
         std::cout << "-----------------------------------\n";
         // ASSERT_TRUE(0);
+        assert(0);
     }
 }
 
@@ -1920,11 +1820,26 @@ static void ulp_test_accuracy_for_single(int element_per_data, int is_abs=0)
         vml_dst  = (T4 *)malloc(sizeof(T4) * len);
         data_init<T1, T3>(llvm_src, vml_src, len, is_abs);
 
+        llvm_src[0] = 1.00021207332611083984375;
+        vml_src[0] = 1.00021207332611083984375;
+
         //init array of max_ac_idx
         for(j = 0; j < 100000; j++)
             max_ac_idx[j] = -1;
         vml_func(i, (T3 *)vml_src, (T4 *)vml_dst);
         llvm_func(i, (T1 *)llvm_src, (T2 *)llvm_dst);
+
+        // union 
+        // {
+        //     /* data */
+        //     double a;
+        //     uint64_t b;
+        // }ff, ff1;
+        // ff.a = vml_dst[16521];
+        // ff1.a = vml_src[16521];
+        
+        // std::cout << ff.a << " " << ff.b << " " << ff1.a << " " << ff1.b << std::endl;
+        // assert(0);
 
         compare_result_ulp<T2,T4>(llvm_dst, vml_dst, len);
         for(j = 0; (j < 100000) && (max_ac_idx[j] != -1); j++);
@@ -1971,12 +1886,14 @@ static void ulp_test_accuracy_for_in2out1(int element_per_data, int is_abs = 0)
         vml_dst  = (T5 *)malloc(sizeof(T5) * len);
 
         data_init<T, T3>(llvm_src, vml_src, len, is_abs);
+
         data_init<T1, T4>(llvm_src2, vml_src2, len, is_abs);
+
         
-        int j;
+        // int j;
         //init array of max_ac_idx
-        for(j = 0; j < 100000; j++)
-            max_ac_idx[j] = -1;
+        // for(j = 0; j < 100000; j++)
+        //     max_ac_idx[j] = -1;
 
         // cout << *vml_src << "*****1*****************" << *llvm_src << "*****************" << *vml_src2 << "*****************" << *llvm_src2 << "*****************" << *vml_dst << "*****************" << *llvm_dst << endl;
         vml_func(i, (T3 *)vml_src, (T4 *)vml_src2, (T5 *)vml_dst);
@@ -1987,7 +1904,7 @@ static void ulp_test_accuracy_for_in2out1(int element_per_data, int is_abs = 0)
 
         compare_result_ulp<T2,T5>(llvm_dst, vml_dst, len);
         
-        for(j = 0; (j < 100000) && (max_ac_idx[j] != -1); j++);
+        // for(j = 0; (j < 100000) && (max_ac_idx[j] != -1); j++);
         // printf("\tmax_err input\t= %.20f\n\tthere are %d results exceed the accuracy limit!!!\n", llvm_src[max_num], j);
 
         free(llvm_src);
@@ -2161,6 +2078,7 @@ static void ulp_test_accuracy_for_in3out1_2(int element_per_data, int is_abs = 0
         data_init<T1, T5>(llvm_src2, vml_src2, len, is_abs);
         data_init<T2, T6>(llvm_src3, vml_src3, len, is_abs);
 
+
         int j;
         //init array of max_ac_idx
         for(j = 0; j < 100000; j++)
@@ -2173,13 +2091,8 @@ static void ulp_test_accuracy_for_in3out1_2(int element_per_data, int is_abs = 0
         llvm_func(i, (T *)llvm_src, (T1 *)llvm_src2, (T2 *)llvm_src3, (T3 *)llvm_dst);
         // cout << *vml_src << "*****3*****************" << *llvm_src << "*****************" << *vml_src2 << "*****************" << *llvm_src2 << "*****************" << *vml_dst << "*****************" << *llvm_dst << endl;
 
-        // for (int xx = 0; xx < 20; xx++)
-        // {
-        //     std::cout << "vml_dst1: " << vml_src3[xx] << ", llvm_dst1: " << llvm_src3[xx] << setprecision(40) << ", vml_src: " << vml_src[xx] << ", vml_src2: " << vml_src2[xx] << ", vml_dst2: " << vml_dst[xx] << ", llvm_dst2: " << llvm_dst[xx] << std::endl;
-        // }
-         
         compare_result_ulp<T3,T7>(llvm_dst, vml_dst, len);
-        
+  
         for(j = 0; (j < 100000) && (max_ac_idx[j] != -1); j++);
         // printf("\tmax_err input\t= %.20f\n\tthere are %d results exceed the accuracy limit!!!\n", llvm_src[max_num], j);
 
