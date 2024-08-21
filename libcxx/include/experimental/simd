@@ -23951,7 +23951,7 @@ doublev<Abi> __cosv(doublev<Abi> x, doublev<Abi> y)
 
 
 template<class Abi>
-static doublev<Abi> sin_piv(doublev<Abi> x)
+doublev<Abi> sin_piv(doublev<Abi> x)
 {
 	intv<Abi> n;
   doublev<Abi> res;

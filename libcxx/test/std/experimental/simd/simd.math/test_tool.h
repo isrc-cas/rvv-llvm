@@ -192,7 +192,7 @@ static void compare_result(T1 *input1, T1 *input2, T2 *vml_out, T2 *openvml_i_ou
 }
 
 template<typename T1, typename T2, typename T3, typename T4>
-static void compare_result(T1 *input1, T2 *input2, T3 *input3, T4 *vml_out, T4 *openvml_i_out, int len)
+void compare_result(T1 *input1, T2 *input2, T3 *input3, T4 *vml_out, T4 *openvml_i_out, int len)
 {
     double precision = sizeof(T2) == 4 ? 1e-7 : 2e-16;
     printf("\nLen:%-7d\t\n", len);
@@ -846,7 +846,7 @@ struct is_Same<T, T> {
 
 template<typename T1, typename T2,
     void (*llvm_func)(int, const T1*, T2*), void (*vml_func)(int, const T1*, T2*)>
-static void test_accuracy_for_single(int element_per_data, int is_abs=0)    
+void test_accuracy_for_single(int element_per_data, int is_abs=0)    
 {
     T1 *llvm_src;
     T1 *vml_src;
@@ -1017,7 +1017,7 @@ static void test_accuracy_for_single(int element_per_data, int is_abs=0)
 
 template<typename T, typename T1, typename T2, 
          void (*llvm_func)(int, const T*, T1*, T2*), void (*vml_func)(int, const  T*, T1*, T2*)>
-static void test_accuracy_for_in2out1(int element_per_data, int is_abs = 0)    
+void test_accuracy_for_in2out1(int element_per_data, int is_abs = 0)    
 {
     T *llvm_src;
     T *vml_src;
@@ -1074,7 +1074,7 @@ static void test_accuracy_for_in2out1(int element_per_data, int is_abs = 0)
 
 template<typename T, typename T1, typename T2, typename T3, 
          void (*llvm_func)(int, const T*, T1*, T2*, T3*), void (*vml_func)(int, const  T*, T1*, T2*, T3*)>
-static void test_accuracy_for_in3out1(int element_per_data, int is_abs = 0)    
+void test_accuracy_for_in3out1(int element_per_data, int is_abs = 0)    
 {
     T *llvm_src;
     T *vml_src;
@@ -1140,7 +1140,7 @@ static void test_accuracy_for_in3out1(int element_per_data, int is_abs = 0)
 
 template<typename T, typename T1, typename T2, typename T3, 
          void (*llvm_func)(int, T*, T1*, T2*, T3*), void (*vml_func)(int, T*, T1*, T2*, T3*)>
-static void test_accuracy_for_in3out1_2(int element_per_data, int is_abs = 0)    
+void test_accuracy_for_in3out1_2(int element_per_data, int is_abs = 0)    
 {
     T *llvm_src;
     T *vml_src;
@@ -1350,7 +1350,7 @@ static void test_accuracy_for_in3out1_2(int element_per_data, int is_abs = 0)
 
 template<typename T, typename T1, typename T2, 
          void (*llvm_func)(int, const T*, T1*, T2*), void (*vml_func)(int, const T*, T1*, T2*)>
-static void test_accuracy_for_in2out1_2(int element_per_data, int is_abs = 0)    
+void test_accuracy_for_in2out1_2(int element_per_data, int is_abs = 0)    
 {
     T *llvm_src;
     T *vml_src;
@@ -1481,7 +1481,7 @@ const double ULPERR = 2;
 
 
 template<typename T, typename T1>
-static void data_init(T *pSrc1, T1 *pSrc2, unsigned int len, bool is_abs)
+void data_init(T *pSrc1, T1 *pSrc2, unsigned int len, bool is_abs)
 {
     unsigned int i;
 
@@ -1615,7 +1615,7 @@ static inline int ulpscale (T x)
 }
 
 template <typename T, typename T1>
-static double ulperr (T got, T1 p, int r = 0,
+double ulperr (T got, T1 p, int r = 0,
 			   int ignore_zero_sign = 0)
 {
   T want = (T)p;
@@ -1681,7 +1681,7 @@ static double ulperr (T got, T1 p, int r = 0,
 
 
 template<typename T3, typename T4>
-static void compare_result_ulp(T3 *vml_out, T4 *openvml_i_out, int len)
+void compare_result_ulp(T3 *vml_out, T4 *openvml_i_out, int len)
 {
   double maxerr = 0;
   uint64_t cnt = 0;
@@ -1804,7 +1804,7 @@ static void compare_result_ulp(T3 *vml_out, T4 *openvml_i_out, int len)
 
 template<typename T1, typename T2, typename T3, typename T4,
     void (*llvm_func)(int, const T1*, T2*), void (*vml_func)(int, const T3*, T4*)>
-static void ulp_test_accuracy_for_single(int element_per_data, int is_abs=0)    
+void ulp_test_accuracy_for_single(int element_per_data, int is_abs=0)    
 {
     T1 *llvm_src;
     T3 *vml_src;
@@ -1860,7 +1860,7 @@ static void ulp_test_accuracy_for_single(int element_per_data, int is_abs=0)
 
 template<typename T, typename T1, typename T2, typename T3, typename T4, typename T5,
          void (*llvm_func)(int, const T*, T1*, T2*), void (*vml_func)(int, const  T3*, T4*, T5*)>
-static void ulp_test_accuracy_for_in2out1(int element_per_data, int is_abs = 0)    
+void ulp_test_accuracy_for_in2out1(int element_per_data, int is_abs = 0)    
 {
     T *llvm_src;
     T3 *vml_src;
@@ -1920,7 +1920,7 @@ static void ulp_test_accuracy_for_in2out1(int element_per_data, int is_abs = 0)
 
 template<typename T, typename T1, typename T2, typename T3, typename T4, typename T5, 
          void (*llvm_func)(int, const T*, T1*, T2*), void (*vml_func)(int, const T3*, T4*, T5*)>
-static void ulp_test_accuracy_for_in2out1_2(int element_per_data, int is_abs = 0)    
+void ulp_test_accuracy_for_in2out1_2(int element_per_data, int is_abs = 0)    
 {
     T *llvm_src;
     T3 *vml_src;
@@ -1978,7 +1978,7 @@ static void ulp_test_accuracy_for_in2out1_2(int element_per_data, int is_abs = 0
 
 template<typename T, typename T1, typename T2, typename T3, typename T4, typename T5, typename T6, typename T7, 
          void (*llvm_func)(int, const T*, T1*, T2*, T3*), void (*vml_func)(int, const  T4*, T5*, T6*, T7*)>
-static void ulp_test_accuracy_for_in3out1(int element_per_data, int is_abs = 0)    
+void ulp_test_accuracy_for_in3out1(int element_per_data, int is_abs = 0)    
 {
     T *llvm_src;
     T4 *vml_src;
@@ -2044,7 +2044,7 @@ static void ulp_test_accuracy_for_in3out1(int element_per_data, int is_abs = 0)
 
 template<typename T, typename T1, typename T2, typename T3, typename T4, typename T5, typename T6, typename T7, 
          void (*llvm_func)(int, T*, T1*, T2*, T3*), void (*vml_func)(int, T4*, T5*, T6*, T7*)>
-static void ulp_test_accuracy_for_in3out1_2(int element_per_data, int is_abs = 0)    
+void ulp_test_accuracy_for_in3out1_2(int element_per_data, int is_abs = 0)    
 {
     T *llvm_src;
     T4 *vml_src;
