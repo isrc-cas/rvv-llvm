@@ -20,6 +20,9 @@
 
 #define TIME_LOOPS 10
 //#define long long long int
+#if __LDBL_MANT_DIG__ == 113 && __LDBL_MIN_EXP__ == -16381 && __LDBL_MAX_EXP__ == 16384
+  #define LDOUBLE_TEST 1
+#endif
 
 static int max_num;
 static int max_ac_idx[100000];
