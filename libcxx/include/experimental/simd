@@ -25495,7 +25495,7 @@ template <class Abi> doublev<Abi> remquo(doublev<Abi> x, doublev<Abi> y, samesiz
   longv<Abi> hx, hy, qs;
   ulongv<Abi> lx, ly, sx;
   intv<Abi> cquo, re_quo;
-  Abi_64suf<Abi> ux, uy, tmp;
+  Abi_64suf<Abi> ux, uy;
   re_quo = *quo;
 
   ux.f = x;
