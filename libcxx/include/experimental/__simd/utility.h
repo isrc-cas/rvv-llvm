@@ -35,7 +35,9 @@ _LIBCPP_HIDE_FROM_ABI constexpr size_t __next_pow_of_2(size_t __val) {
 
 template <class _Tp>
 _LIBCPP_HIDE_FROM_ABI auto __choose_mask_type() {
-  if constexpr (sizeof(_Tp) == 1) {
+  if constexpr (std::is_same_v<_Tp, bool>) {
+    return bool{};
+  } else if constexpr (sizeof(_Tp) == 1) {
     return uint8_t{};
   } else if constexpr (sizeof(_Tp) == 2) {
     return uint16_t{};

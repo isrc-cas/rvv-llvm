@@ -157,6 +157,13 @@ struct __simd_traits<_Tp, simd_abi::__scalar> {
   static _Simd __exp(_Simd __s) { return exp(__s.__data); }
 
   static _Simd __log(_Simd __s) { return log(__s.__data); }
+
+  template <class _Up, class _Abi>
+  static __simd_storage<_Up, _Abi> __convert(_Simd __s) noexcept {
+    __simd_storage<_Up, _Abi> __result;
+    *reinterpret_cast<_Up*>(&__result.__data) = static_cast<_Up>(__s.__data);
+    return __result;
+  }
 };
 
 template <class _Tp>
@@ -198,6 +205,13 @@ struct __mask_traits<_Tp, simd_abi::__scalar> {
   static _Mask __masked_assign(_Mask& __s, _Mask __m, _Mask __v) noexcept {
     __s.__data = __m.__data ? __v.__data : __s.__data;
     return __s;
+  }
+
+  template <class _Up, class _Abi>
+  static __mask_storage<_Up, _Abi> __convert(_Mask __s) noexcept {
+    __mask_storage<_Up, _Abi> __result;
+    *reinterpret_cast<decltype(__choose_mask_type<_Up>())*>(&__result.__data) = __s.__data;
+    return __result;
   }
 };
 

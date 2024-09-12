@@ -11,6 +11,7 @@
 #define _LIBCPP_EXPERIMENTAL___SIMD_vec_ext_H
 
 #include <experimental/__simd/declaration.h>
+#include <experimental/__simd/scalar.h>
 #include <experimental/__simd/utility.h>
 #include <functional>
 
@@ -156,6 +157,16 @@ struct __simd_traits<_Tp, simd_abi::__vec_ext<_Np>> {
   static _Simd __exp(const _Simd __s) noexcept { return {__builtin_elementwise_exp(__s.__data)}; }
 
   static _Simd __log(const _Simd __s) noexcept { return {__builtin_elementwise_log(__s.__data)}; }
+
+  template <class _Up, class _Abi>
+  static __simd_storage<_Up, _Abi> __convert(_Simd __s) noexcept {
+    __simd_storage<_Up, _Abi> __result;
+    if constexpr (is_same_v<_Abi, simd_abi::__scalar>)
+      __result.__data = static_cast<_Up>(__s.__data[0]);
+    else
+      __result.__data = __builtin_convertvector(__s.__data, decltype(__result.__data));
+    return __result;
+  }
 };
 
 template <class _Tp, int _Np>
@@ -265,6 +276,16 @@ struct __mask_traits<_Tp, simd_abi::__vec_ext<_Np>> {
   static _Mask __masked_assign(_Mask& __s, _Mask __m, _Mask __v) noexcept {
     __s.__data = __m.__data ? __v.__data : __s.__data;
     return __s;
+  }
+
+  template <class _Up, class _Abi>
+  static __mask_storage<_Up, _Abi> __convert(_Mask __s) noexcept {
+    __mask_storage<_Up, _Abi> __result;
+    if constexpr (is_same_v<_Abi, simd_abi::__scalar>)
+      __result.__data = static_cast<bool>(__s.__data[0]);
+    else
+    __result.__data = __builtin_convertvector(__s.__data, decltype(__result.__data));
+    return __result;
   }
 };
 

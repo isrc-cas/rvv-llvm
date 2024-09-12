@@ -1114,21 +1114,15 @@ struct __simd_cast_return_type<_Tp,
 
 template <class _To, class _From>
 _LIBCPP_HIDE_FROM_ABI enable_if_t<is_simd_v<_To> && is_simd_v<_From> && _To::size() == _From::size(), _To>
-__simd_conversion(_From __v) { // TODO: Optimizeable
-  _To __res;
-  for (size_t __i = 0; __i < _From::size(); __i++) {
-    __res[__i] = static_cast<typename _To::value_type>(__v[__i]);
-  }
+__simd_conversion(_From __v) {
+  _To __res(static_cast<_To>(__simd_traits<typename _From::value_type, typename _From::abi_type>::template __convert<typename _To::value_type, typename _To::abi_type>(__v.__s_)));
   return __res;
 }
 
 template <class _To, class _From>
 _LIBCPP_HIDE_FROM_ABI enable_if_t<is_simd_mask_v<_To> && is_simd_mask_v<_From> && _To::size() == _From::size(), _To>
-__mask_conversion(_From __m) { // TODO: Optimizeable
-  _To __res;
-  for (size_t __i = 0; __i < _From::size(); __i++) {
-    __res[__i] = __m[__i];
-  }
+__mask_conversion(_From __m) {
+  _To __res(static_cast<_To>(__mask_traits<typename _From::simd_type::value_type, typename _From::abi_type>::template __convert<typename _To::simd_type::value_type, typename _To::abi_type>(__m.__s_)));
   return __res;
 }
 
@@ -1832,8 +1826,6 @@ class simd : public __simd_int_operators<simd<_Tp, _Abi>, __simd_traits<_Tp, _Ab
   using _Impl    = __simd_traits<_Tp, _Abi>;
   using _Storage = typename _Impl::_Simd;
 
-  _Storage __s_;
-
   friend class simd_mask<_Tp, _Abi>;
   friend class __simd_int_operators<simd, _Impl, true>;
 
@@ -1862,11 +1854,12 @@ class simd : public __simd_int_operators<simd<_Tp, _Abi>, __simd_traits<_Tp, _Ab
 
   template <class _Mp, class _Vp>
   friend typename _Vp::value_type hmin(const const_where_expression<_Mp, _Vp>& __w) noexcept;
-
   template <class _Mp, class _Vp>
   friend typename _Vp::value_type hmax(const const_where_expression<_Mp, _Vp>& __w) noexcept;
 
 public:
+  _Storage __s_;
+
   using value_type = _Tp;
   using reference  = __simd_reference<_Tp, _Storage, value_type>;
   using mask_type  = simd_mask<_Tp, _Abi>;
@@ -2020,8 +2013,6 @@ class simd_mask {
   using _Impl    = __mask_traits<_Tp, _Abi>;
   using _Storage = typename _Impl::_Mask;
 
-  _Storage __s_;
-
   friend class simd<_Tp, _Abi>;
 
   template <class _MaskType, class _SimdType>
@@ -2046,11 +2037,12 @@ class simd_mask {
 
   template <class _Mp, class _Vp>
   friend typename _Vp::value_type hmin(const const_where_expression<_Mp, _Vp>& __w) noexcept;
-
   template <class _Mp, class _Vp>
   friend typename _Vp::value_type hmax(const const_where_expression<_Mp, _Vp>& __w) noexcept;
 
 public:
+  _Storage __s_;
+
   using value_type = bool;
   using reference  = __simd_reference<_Tp, _Storage, value_type>;
   using simd_type  = simd<_Tp, _Abi>;
