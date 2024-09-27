@@ -2220,11 +2220,7 @@ T vfmsq(T z, T x, T y){
 
 template <class T1, class T2, class Abi> 
 simd_mask<T2, Abi> change_simd_mask_type(simd_mask<T1, Abi> jd_i){
-  int n = jd_i.size();
-  bool btmp[n];
-  jd_i.copy_to(&btmp[0], element_aligned);
-  simd_mask<T2, Abi> jd(&btmp[0], element_aligned);
-  return jd;
+  return __mask_conversion<simd_mask<T2, Abi>, simd_mask<T1, Abi>>(jd_i);
 }
 
 template<class Abi>
@@ -22631,20 +22627,14 @@ template <class Abi> doublev<Abi> erf(doublev<Abi> x){
     sign = ux.u & ~AbsMask;
     ux.u = ux.u & AbsMask;
 
-    int n = x.size();
-
-    bool btmp[n];
     auto tmp_jd = ux.u < 0x2030000000000000UL;
-    tmp_jd.copy_to(&btmp[0], element_aligned);
-    simd_mask<double, Abi> jd1(&btmp[0], element_aligned);
+    simd_mask<double, Abi> jd1(__mask_conversion<simd_mask<double, Abi>, decltype(tmp_jd)>(tmp_jd));
 
     tmp_jd = ux.u < 0x4017f80000000000UL;
-    tmp_jd.copy_to(&btmp[0], element_aligned);
-    simd_mask<double, Abi> jd2(&btmp[0], element_aligned);
+    simd_mask<double, Abi> jd2(__mask_conversion<simd_mask<double, Abi>, decltype(tmp_jd)>(tmp_jd));
 
     tmp_jd = ux.u >= 0x7ff0000000000000UL;
-    tmp_jd.copy_to(&btmp[0], element_aligned);
-    simd_mask<double, Abi> jd3(&btmp[0], element_aligned);
+    simd_mask<double, Abi> jd3(__mask_conversion<simd_mask<double, Abi>, decltype(tmp_jd)>(tmp_jd));
 
     where(jd1, y) = 0x1.06eba8214db69p-3 * x - x;
 
@@ -23500,18 +23490,13 @@ template <class Abi> doublev<Abi> erfc(doublev<Abi> x){
   sign = ux.u & ~AbsMask;
   ux.u = ux.u & AbsMask;
 
-  int n = x.size();
-
-  bool btmp[n];
   auto tmp_jd = ux.u >= 0x7ff0000000000000UL;
-  tmp_jd.copy_to(&btmp[0], element_aligned);
-  simd_mask<double, Abi> jd1(&btmp[0], element_aligned);
+  simd_mask<double, Abi> jd1(__mask_conversion<simd_mask<double, Abi>, decltype(tmp_jd)>(tmp_jd));
 
   auto jd2 = (x < -6.0);
 
   tmp_jd = ux.u < 0x403b3e0000000000UL;
-  tmp_jd.copy_to(&btmp[0], element_aligned);
-  simd_mask<double, Abi> jd3(&btmp[0], element_aligned);
+  simd_mask<double, Abi> jd3(__mask_conversion<simd_mask<double, Abi>, decltype(tmp_jd)>(tmp_jd));
 
   auto jd4 = (ux.f<0x1p-511);
 
