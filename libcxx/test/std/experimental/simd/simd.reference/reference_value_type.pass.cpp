@@ -7,7 +7,6 @@
 //===----------------------------------------------------------------------===//
 
 // UNSUPPORTED: c++03, c++11, c++14
-// XFAIL: target=powerpc{{.*}}le-unknown-linux-gnu
 
 // <experimental/simd>
 //
@@ -18,33 +17,26 @@
 #include <experimental/simd>
 
 namespace ex = std::experimental::parallelism_v2;
-
-template <class T, std::size_t>
-struct CheckSimdReferenceValueType {
-  template <class SimdAbi>
+struct CheckReferenceValueType {
+  template <class _Tp, class SimdAbi>
   void operator()() {
-    ex::simd<T, SimdAbi> origin_simd([](T i) { return static_cast<T>(i); });
-    for (size_t i = 0; i < origin_simd.size(); ++i) {
-      static_assert(noexcept(T(origin_simd[i])));
-      assert(T(origin_simd[i]) == static_cast<T>(i));
-    }
+    ex::simd<_Tp, SimdAbi> origin_simd([](_Tp i) { return static_cast<_Tp>(i + 2); });
+
+    // cannot use `auto` for variable `r` here, the type will be evalued as `ex::simd_reference`
+    _Tp r = origin_simd[0];
+
+    assert(r == 2);
   }
 };
-
-template <class T, std::size_t>
-struct CheckMaskReferenceValueType {
-  template <class SimdAbi>
-  void operator()() {
-    ex::simd_mask<T, SimdAbi> origin_simd_mask(true);
-    for (size_t i = 0; i < origin_simd_mask.size(); ++i) {
-      static_assert(noexcept(bool(origin_simd_mask[i])));
-      assert(bool(origin_simd_mask[i]) == true);
-    }
-  }
-};
+template <class F, std::size_t _Np, class _Tp>
+void test_simd_abi() {}
+template <class F, std::size_t _Np, class _Tp, class SimdAbi, class... SimdAbis>
+void test_simd_abi() {
+  F{}.template operator()<_Tp, SimdAbi>();
+  test_simd_abi<F, _Np, _Tp, SimdAbis...>();
+}
 
 int main(int, char**) {
-  test_all_simd_abi<CheckSimdReferenceValueType>();
-  test_all_simd_abi<CheckMaskReferenceValueType>();
+  test_all_simd_abi<CheckReferenceValueType>();
   return 0;
 }

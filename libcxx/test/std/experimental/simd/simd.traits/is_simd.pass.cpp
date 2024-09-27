@@ -16,26 +16,30 @@
 // ex::is_simd<T>::value;
 
 #include "../test_utils.h"
+#include <experimental/simd>
 
 namespace ex = std::experimental::parallelism_v2;
 
-template <class T, std::size_t>
-struct CheckIsSimd {
-  template <class SimdAbi>
-  void operator()() {
-    static_assert(ex::is_simd<ex::simd<T, SimdAbi>>::value);
+class EmptyEntry {};
 
-    static_assert(!ex::is_simd<T>::value);
-    static_assert(!ex::is_simd<ex::simd_mask<T, SimdAbi>>::value);
+template <class F, std::size_t _Np, class _Tp>
+void test_simd_abi() {}
+template <class F, std::size_t _Np, class _Tp, class SimdAbi, class... SimdAbis>
+void test_simd_abi() {
+  static_assert(ex::is_simd<ex::simd<_Tp, SimdAbi>>::value);
 
-    static_assert(ex::is_simd_v<ex::simd<T, SimdAbi>>);
+  static_assert(!ex::is_simd<_Tp>::value);
+  static_assert(!ex::is_simd<ex::simd_mask<_Tp, SimdAbi>>::value);
 
-    static_assert(!ex::is_simd_v<T>);
-    static_assert(!ex::is_simd_v<ex::simd_mask<T, SimdAbi>>);
-  }
-};
+  static_assert(ex::is_simd_v<ex::simd<_Tp, SimdAbi>>);
+
+  static_assert(!ex::is_simd_v<_Tp>);
+  static_assert(!ex::is_simd_v<ex::simd_mask<_Tp, SimdAbi>>);
+
+  test_simd_abi<F, _Np, _Tp, SimdAbis...>();
+}
 
 int main(int, char**) {
-  test_all_simd_abi<CheckIsSimd>();
+  test_all_simd_abi<EmptyEntry>();
   return 0;
 }

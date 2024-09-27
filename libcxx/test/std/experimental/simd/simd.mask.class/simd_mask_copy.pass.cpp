@@ -10,118 +10,118 @@
 
 // <experimental/simd>
 //
-// [simd.class]
+// [simd.mask.class]
 // template<class Flags> void copy_from(const value_type* mem, Flags);
 // template<class Flags> void copy_to(value_type* mem, Flags);
 
 #include "../test_utils.h"
+#include <experimental/simd>
 
 namespace ex = std::experimental::parallelism_v2;
 
-template <class T, std::size_t>
-struct CheckSimdMaskCopyFrom {
-  template <class SimdAbi>
+struct CheckSimdCopyFrom {
+  template <class _Tp, class SimdAbi, size_t _Np>
   void operator()() {
-    constexpr std::size_t array_size = ex::simd_size_v<T, SimdAbi>;
+    {
+      constexpr auto alignas_size = ex::memory_alignment_v<ex::simd_mask<_Tp, SimdAbi>>;
+      ex::simd_mask<_Tp, SimdAbi> origin_simd_mask{};
 
-    // element aligned tag
-    constexpr std::size_t element_alignas_size = alignof(bool);
-    alignas(element_alignas_size) bool element_buffer[array_size];
-    for (size_t i = 0; i < array_size; ++i)
-      element_buffer[i] = static_cast<bool>(i % 2);
-    ex::simd_mask<T, SimdAbi> element_mask;
-    element_mask.copy_from(element_buffer, ex::element_aligned_tag());
-    assert_simd_mask_values_equal(element_mask, element_buffer);
+      constexpr auto array_length = origin_simd_mask.size();
 
-    // vector aligned tag
-    constexpr std::size_t vector_alignas_size = ex::memory_alignment_v<ex::simd_mask<T, SimdAbi>>;
-    alignas(vector_alignas_size) bool vector_buffer[array_size];
-    for (size_t i = 0; i < array_size; ++i)
-      vector_buffer[i] = static_cast<bool>(i % 2);
-    ex::simd_mask<T, SimdAbi> vector_mask;
-    vector_mask.copy_from(vector_buffer, ex::vector_aligned_tag());
-    assert_simd_mask_values_equal(vector_mask, vector_buffer);
+      alignas(alignas_size) bool buffer[array_length];
+      for (size_t i = 0; i < array_length; i++)
+        buffer[i] = static_cast<bool>(i + 1);
 
-    // overaligned tag
-    constexpr std::size_t over_alignas_size = bit_ceil(sizeof(bool) + 1);
-    alignas(over_alignas_size) bool overaligned_buffer[array_size];
-    for (size_t i = 0; i < array_size; ++i)
-      overaligned_buffer[i] = static_cast<bool>(i % 2);
-    ex::simd_mask<T, SimdAbi> overaligned_mask;
-    overaligned_mask.copy_from(overaligned_buffer, ex::overaligned_tag<over_alignas_size>());
-    assert_simd_mask_values_equal(overaligned_mask, overaligned_buffer);
+      origin_simd_mask.copy_from(buffer, ex::vector_aligned_tag());
+
+      assert_simd_mask_value_correct(origin_simd_mask, buffer);
+    }
+
+    {
+      constexpr auto alignas_size = std::max(next_pow2(sizeof(_Tp)), next_pow2(_Np));
+      ex::simd_mask<_Tp, SimdAbi> origin_simd_mask{};
+      constexpr auto array_length = origin_simd_mask.size();
+
+      alignas(alignas_size) bool buffer[array_length];
+      for (size_t i = 0; i < array_length; i++)
+        buffer[i] = static_cast<bool>(i + 1);
+
+      origin_simd_mask.copy_from(buffer, ex::overaligned_tag<alignas_size>());
+
+      assert_simd_mask_value_correct(origin_simd_mask, buffer);
+    }
+
+    {
+      constexpr auto alignas_size = std::max(next_pow2(sizeof(_Tp)), next_pow2(alignof(_Tp)));
+      ex::simd_mask<_Tp, SimdAbi> origin_simd_mask{};
+      constexpr auto array_length = origin_simd_mask.size();
+
+      alignas(alignas_size) bool buffer[array_length];
+      for (size_t i = 0; i < array_length; i++)
+        buffer[i] = static_cast<bool>(i + 1);
+
+      origin_simd_mask.copy_from(buffer, ex::element_aligned_tag());
+
+      assert_simd_mask_value_correct(origin_simd_mask, buffer);
+    }
   }
 };
 
-template <class T, std::size_t>
-struct CheckSimdMaskCopyTo {
-  template <class SimdAbi>
+struct CheckSimdCopyTo {
+  template <class _Tp, class SimdAbi, size_t _Np>
   void operator()() {
-    constexpr std::size_t array_size = ex::simd_size_v<T, SimdAbi>;
+    {
+      constexpr auto alignas_size = ex::memory_alignment_v<ex::simd_mask<_Tp, SimdAbi>>;
 
-    // element aligned tag
-    constexpr std::size_t element_alignas_size = alignof(bool);
-    alignas(element_alignas_size) bool element_buffer[array_size];
-    ex::simd_mask<T, SimdAbi> element_mask(true);
-    element_mask.copy_to(element_buffer, ex::element_aligned_tag());
-    assert_simd_mask_values_equal(element_mask, element_buffer);
+      const ex::simd_mask<_Tp, SimdAbi> origin_simd_mask([](bool i) { return static_cast<bool>(i + 1); });
+      constexpr auto array_length = origin_simd_mask.size();
+      alignas(alignas_size) bool expected_buffer[array_length]{};
 
-    // vector aligned tag
-    constexpr std::size_t vector_alignas_size = ex::memory_alignment_v<ex::simd_mask<T, SimdAbi>>;
-    alignas(vector_alignas_size) bool vector_buffer[array_size];
-    ex::simd_mask<T, SimdAbi> vector_mask(false);
-    vector_mask.copy_to(vector_buffer, ex::vector_aligned_tag());
-    assert_simd_mask_values_equal(vector_mask, vector_buffer);
+      origin_simd_mask.copy_to(expected_buffer, ex::vector_aligned_tag());
 
-    // overaligned tag
-    constexpr std::size_t over_alignas_size = bit_ceil(sizeof(bool) + 1);
-    alignas(over_alignas_size) bool overaligned_buffer[array_size];
-    ex::simd_mask<T, SimdAbi> overaligned_mask(true);
-    overaligned_mask.copy_to(overaligned_buffer, ex::overaligned_tag<over_alignas_size>());
-    assert_simd_mask_values_equal(overaligned_mask, overaligned_buffer);
+      for (size_t i = 0; i < origin_simd_mask.size(); i++)
+        assert(expected_buffer[i] == static_cast<bool>(i + 1));
+    }
+
+    {
+      constexpr auto alignas_size = std::max(next_pow2(sizeof(_Tp)), next_pow2(_Np));
+      const ex::simd_mask<_Tp, SimdAbi> origin_simd_mask([](bool i) { return static_cast<bool>(i + 1); });
+
+      constexpr auto array_length = origin_simd_mask.size();
+
+      alignas(alignas_size) bool expected_buffer[array_length]{};
+
+      origin_simd_mask.copy_to(expected_buffer, ex::overaligned_tag<alignas_size>());
+
+      for (size_t i = 0; i < array_length; i++)
+        assert(expected_buffer[i] == static_cast<bool>(i + 1));
+    }
+
+    {
+      constexpr auto alignas_size = std::max(next_pow2(sizeof(_Tp)), next_pow2(alignof(_Tp)));
+      const ex::simd_mask<_Tp, SimdAbi> origin_simd_mask([](bool i) { return static_cast<bool>(i + 1); });
+
+      constexpr auto array_length = origin_simd_mask.size();
+
+      alignas(alignas_size) bool expected_buffer[array_length]{};
+
+      origin_simd_mask.copy_to(expected_buffer, ex::element_aligned_tag());
+
+      for (size_t i = 0; i < array_length; i++)
+        assert(expected_buffer[i] == static_cast<bool>(i + 1));
+    }
   }
 };
-
-template <class T, class Flags, class SimdAbi = ex::simd_abi::compatible<T>, class = void>
-struct has_copy_from : std::false_type {};
-
-template <class T, class Flags, class SimdAbi>
-struct has_copy_from<T,
-                     Flags,
-                     SimdAbi,
-                     std::void_t<decltype(std::declval<ex::simd_mask<T, SimdAbi>>().copy_from(
-                         std::declval<const bool*>(), std::declval<Flags>()))>> : std::true_type {};
-
-template <class T, class Flags, class SimdAbi = ex::simd_abi::compatible<T>, class = void>
-struct has_copy_to : std::false_type {};
-
-template <class T, class Flags, class SimdAbi>
-struct has_copy_to<T,
-                   Flags,
-                   SimdAbi,
-                   std::void_t<decltype(std::declval<ex::simd_mask<T, SimdAbi>>().copy_to(
-                       std::declval<bool*>(), std::declval<Flags>()))>> : std::true_type {};
-
-template <class T, std::size_t>
-struct CheckSimdMaskCopyTraits {
-  template <class SimdAbi>
-  void operator()() {
-    // These functions shall not participate in overload resolution unless
-    // is_simd_flag_type_v<Flags> is true
-    static_assert(has_copy_from<T, ex::element_aligned_tag, SimdAbi>::value);
-    static_assert(has_copy_to<T, ex::element_aligned_tag, SimdAbi>::value);
-
-    // is_simd_flag_type_v<Flags> is false
-    static_assert(!has_copy_from<T, T, SimdAbi>::value);
-    static_assert(!has_copy_to<T, T, SimdAbi>::value);
-    static_assert(!has_copy_from<T, SimdAbi, SimdAbi>::value);
-    static_assert(!has_copy_to<T, SimdAbi, SimdAbi>::value);
-  }
-};
+template <class F, std::size_t _Np, class _Tp>
+void test_simd_abi() {}
+template <class F, std::size_t _Np, class _Tp, class SimdAbi, class... SimdAbis>
+void test_simd_abi() {
+  F{}.template operator()<_Tp, SimdAbi, _Np>();
+  test_simd_abi<F, _Np, _Tp, SimdAbis...>();
+}
 
 int main(int, char**) {
-  test_all_simd_abi<CheckSimdMaskCopyFrom>();
-  test_all_simd_abi<CheckSimdMaskCopyTo>();
-  test_all_simd_abi<CheckSimdMaskCopyTraits>();
+  test_all_simd_abi<CheckSimdCopyFrom>();
+  test_all_simd_abi<CheckSimdCopyTo>();
   return 0;
 }

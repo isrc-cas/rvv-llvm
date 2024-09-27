@@ -10,9 +10,6 @@
 
 // <experimental/simd>
 //
-// Note: To ensure the swap functions can be called directly in the std::experimental namespace,
-// the implementation approach might not fully align with the specification.
-//
 // [simd.reference]
 // friend void swap(reference&& a, reference&& b) noexcept;
 // friend void swap(value_type& a, reference&& b) noexcept;
@@ -23,52 +20,50 @@
 
 namespace ex = std::experimental::parallelism_v2;
 
-template <class T, std::size_t>
-struct CheckSimdRefSwap {
-  template <class SimdAbi>
+struct CheckReferenceSwap {
+  template <class _Tp, class SimdAbi>
   void operator()() {
-    ex::simd<T, SimdAbi> origin_simd_1(1);
-    ex::simd<T, SimdAbi> origin_simd_2(2);
-    T value = 3;
+    if constexpr (ex::simd_size_v<_Tp, SimdAbi> >= 2) {
+      ex::simd<_Tp, SimdAbi> reference_simd([](_Tp i) { return static_cast<_Tp>(i + 2); });
 
-    static_assert(noexcept(ex::swap(std::move(origin_simd_1[0]), std::move(origin_simd_2[0]))));
-    ex::swap(std::move(origin_simd_1[0]), std::move(origin_simd_2[0]));
-    assert((origin_simd_1[0] == 2) && (origin_simd_2[0] == 1));
+      {
+        assert(reference_simd[0] == static_cast<_Tp>(2));
+        assert(reference_simd[1] == static_cast<_Tp>(3));
+        swap(reference_simd[0], reference_simd[1]);
+        assert(reference_simd[1] == static_cast<_Tp>(2));
+        assert(reference_simd[0] == static_cast<_Tp>(3));
+      }
 
-    static_assert(noexcept(ex::swap(std::move(origin_simd_1[0]), value)));
-    ex::swap(std::move(origin_simd_1[0]), value);
-    assert((origin_simd_1[0] == 3) && (value == 2));
+      {
+        _Tp value_to_swap = static_cast<_Tp>(4);
+        assert(value_to_swap == static_cast<_Tp>(4));
 
-    static_assert(noexcept(ex::swap(value, std::move(origin_simd_2[0]))));
-    ex::swap(value, std::move(origin_simd_2[0]));
-    assert((value == 1) && (origin_simd_2[0] == 2));
+        assert(reference_simd[0] == static_cast<_Tp>(3));
+        swap(value_to_swap, reference_simd[0]);
+        assert(value_to_swap == static_cast<_Tp>(3));
+        assert(reference_simd[0] == static_cast<_Tp>(4));
+      }
+      {
+        _Tp value_to_swap = static_cast<_Tp>(6);
+        assert(value_to_swap == static_cast<_Tp>(6));
+
+        assert(reference_simd[0] == static_cast<_Tp>(4));
+        swap(reference_simd[0], value_to_swap);
+        assert(value_to_swap == static_cast<_Tp>(4));
+        assert(reference_simd[0] == static_cast<_Tp>(6));
+      }
+    }
   }
 };
-
-template <class T, std::size_t>
-struct CheckMaskRefSwap {
-  template <class SimdAbi>
-  void operator()() {
-    ex::simd_mask<T, SimdAbi> origin_mask_1(true);
-    ex::simd_mask<T, SimdAbi> origin_mask_2(false);
-    bool value = true;
-
-    static_assert(noexcept(ex::swap(std::move(origin_mask_1[0]), std::move(origin_mask_2[0]))));
-    ex::swap(std::move(origin_mask_1[0]), std::move(origin_mask_2[0]));
-    assert((origin_mask_1[0] == false) && (origin_mask_2[0] == true));
-
-    static_assert(noexcept(ex::swap(std::move(origin_mask_1[0]), value)));
-    ex::swap(std::move(origin_mask_1[0]), value);
-    assert((origin_mask_1[0] == true) && (value == false));
-
-    static_assert(noexcept(ex::swap(value, std::move(origin_mask_2[0]))));
-    ex::swap(value, std::move(origin_mask_2[0]));
-    assert((value == true) && (origin_mask_2[0] == false));
-  }
-};
+template <class F, std::size_t _Np, class _Tp>
+void test_simd_abi() {}
+template <class F, std::size_t _Np, class _Tp, class SimdAbi, class... SimdAbis>
+void test_simd_abi() {
+  F{}.template operator()<_Tp, SimdAbi>();
+  test_simd_abi<F, _Np, _Tp, SimdAbis...>();
+}
 
 int main(int, char**) {
-  test_all_simd_abi<CheckSimdRefSwap>();
-  test_all_simd_abi<CheckMaskRefSwap>();
+  test_all_simd_abi<CheckReferenceSwap>();
   return 0;
 }

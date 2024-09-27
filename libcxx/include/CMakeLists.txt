@@ -920,13 +920,9 @@ set(files
   execution
   expected
   experimental/__config
-  experimental/__simd/aligned_tag.h
+  experimental/__simd/config.h
   experimental/__simd/declaration.h
-  experimental/__simd/reference.h
   experimental/__simd/scalar.h
-  experimental/__simd/simd.h
-  experimental/__simd/simd_mask.h
-  experimental/__simd/traits.h
   experimental/__simd/utility.h
   experimental/__simd/vec_ext.h
   experimental/iterator

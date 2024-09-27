@@ -1,0 +1,16 @@
+image: ubuntu:20.04
+
+before_script:
+  - export RUNNER_MAX_LINK_JOBS=`free --giga | grep Mem | awk '{print int($2 / 16)}'`
+
+build:
+  stage: build
+  tags:
+    - llvm
+
+  script:
+    - mkdir build
+    - cmake -G Ninja -S llvm -B build -DCMAKE_BUILD_TYPE=Release -DLLVM_ENABLE_PROJECTS="clang" -DLLVM_ENABLE_RUNTIMES="libcxx;libcxxabi;libunwind" -DLLVM_RUNTIME_TARGETS="x86_64-unknown-linux-gnu" -DCMAKE_CXX_FLAGS="-Wno-error -Wno-error=vla"
+    - ninja -C build runtimes
+    - ninja -C build runtimes-test-depends
+    - build/bin/llvm-lit --param=std=c++17 -sv --show-unsupported --xunit-xml-output test-results.xml --time-tests build/runtimes/runtimes-x86_64-unknown-linux-gnu-bins/libcxx/test/std/experimental/simd/
