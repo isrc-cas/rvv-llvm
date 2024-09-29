@@ -11,6 +11,7 @@
 #define _LIBCPP_EXPERIMENTAL___SIMD_SCALAR_H
 
 #include <algorithm>
+#include <cmath>
 #include <experimental/__simd/declaration.h>
 #include <experimental/__simd/utility.h>
 
@@ -148,6 +149,8 @@ struct __simd_traits<_Tp, simd_abi::__scalar> {
   static _LIBCPP_HIDE_FROM_ABI _Tp __reduce(const _Simd& __s, _BinaryOp) {
     return __s.__data;
   }
+
+  static _Simd __sqrt(_Simd __s) { return sqrt(__s.__data); }
 };
 
 template <class _Tp>

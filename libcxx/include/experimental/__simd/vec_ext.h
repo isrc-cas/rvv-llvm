@@ -148,6 +148,8 @@ struct __simd_traits<_Tp, simd_abi::__vec_ext<_Np>> {
   static _Tp __reduce(const _Simd& __s, bit_or<>) { return __builtin_reduce_or(__s.__data); }
 
   static _Tp __reduce(const _Simd& __s, bit_xor<>) { return __builtin_reduce_xor(__s.__data); }
+
+  static _Simd __sqrt(const _Simd __s) noexcept { return {__builtin_elementwise_sqrt(__s.__data)}; }
 };
 
 template <class _Tp, int _Np>
