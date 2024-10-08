@@ -1508,6 +1508,21 @@ simd<_Tp, _Abi> sqrt(const simd<_Tp, _Abi>& __s) noexcept {
   return static_cast<simd<_Tp, _Abi>>(__simd_traits<_Tp, _Abi>::__sqrt(__s.__s_));
 }
 
+template <class _Tp, class _Abi>
+simd<_Tp, _Abi> abs(const simd<_Tp, _Abi>& __s) noexcept {
+  return static_cast<simd<_Tp, _Abi>>(__simd_traits<_Tp, _Abi>::__abs(__s.__s_));
+}
+
+template <class _Tp, class _Abi>
+simd<_Tp, _Abi> exp(const simd<_Tp, _Abi>& __s) noexcept {
+  return static_cast<simd<_Tp, _Abi>>(__simd_traits<_Tp, _Abi>::__exp(__s.__s_));
+}
+
+template <class _Tp, class _Abi>
+simd<_Tp, _Abi> log(const simd<_Tp, _Abi>& __s) noexcept {
+  return static_cast<simd<_Tp, _Abi>>(__simd_traits<_Tp, _Abi>::__log(__s.__s_));
+}
+
 // Where expression class templates [parallel.simd.whereexpr]
 template <class _MaskType, class _SimdType>
 class const_where_expression {
@@ -1834,6 +1849,9 @@ class simd : public __simd_int_operators<simd<_Tp, _Abi>, __simd_traits<_Tp, _Ab
   friend _Tp hmin<>(const simd&) noexcept;
   friend _Tp hmax<>(const simd&) noexcept;
   friend simd sqrt<>(const simd&) noexcept;
+  friend simd abs<>(const simd&) noexcept;
+  friend simd exp<>(const simd&) noexcept;
+  friend simd log<>(const simd&) noexcept;
 
   template <class __Tp, class __Abi, class _BinaryOp>
   friend __Tp reduce(const simd<__Tp, __Abi>&, _BinaryOp);
@@ -8727,83 +8745,83 @@ ldoublev<Abi> round(ldoublev<Abi> x) {
 //   return ux.f;
 // }
 
-#ifdef LDOUBLE_BINARY128
-template <class Abi> ldoublev<Abi> sqrt(ldoublev<Abi> x)
-{
-  Abi_128suf<Abi> ux;
-  intv<Abi> k, r, exp;
-  ldoublev<Abi> lo, xn;
-  fenv_t env;
+// #ifdef LDOUBLE_BINARY128
+// template <class Abi> ldoublev<Abi> sqrt(ldoublev<Abi> x)
+// {
+//   Abi_128suf<Abi> ux;
+//   intv<Abi> k, r, exp;
+//   ldoublev<Abi> lo, xn;
+//   fenv_t env;
 
-  ux.f = x;
-  exp = static_simd_cast<intv<Abi>>((GET_LONGDOUBLE_HI(ux.u) & 0x7fff000000000000UL) >> 48);
-  auto spc1_mask = simd_mask<long double, Abi>(exp == 0x7fff);
-  ldoublev<Abi> spc1_result = x * x + x;
+//   ux.f = x;
+//   exp = static_simd_cast<intv<Abi>>((GET_LONGDOUBLE_HI(ux.u) & 0x7fff000000000000UL) >> 48);
+//   auto spc1_mask = simd_mask<long double, Abi>(exp == 0x7fff);
+//   ldoublev<Abi> spc1_result = x * x + x;
 
-  auto spc2_mask = simd_mask<long double, Abi>(((GET_LONGDOUBLE_HI(ux.u) & 0x7fffffffffffffffUL) == 0) & ((GET_LONGDOUBLE_LO(ux.u)) == 0));
-  ldoublev<Abi> spc2_result = x;
+//   auto spc2_mask = simd_mask<long double, Abi>(((GET_LONGDOUBLE_HI(ux.u) & 0x7fffffffffffffffUL) == 0) & ((GET_LONGDOUBLE_LO(ux.u)) == 0));
+//   ldoublev<Abi> spc2_result = x;
 
-  auto spc3_mask = simd_mask<long double, Abi>((GET_LONGDOUBLE_HI(ux.u) & 0x8000000000000000UL) == 0x8000000000000000UL);
-  ldoublev<Abi> spc3_result = ((x - x) / (x - x));
+//   auto spc3_mask = simd_mask<long double, Abi>((GET_LONGDOUBLE_HI(ux.u) & 0x8000000000000000UL) == 0x8000000000000000UL);
+//   ldoublev<Abi> spc3_result = ((x - x) / (x - x));
 
-  feholdexcept(&env);
+//   feholdexcept(&env);
 
-  auto spc4 = (exp == 0);
-  auto spc4_f = simd_mask<long double, Abi>(spc4);
+//   auto spc4 = (exp == 0);
+//   auto spc4_f = simd_mask<long double, Abi>(spc4);
 
-  where(spc4_f, ux.f) = ux.f * 0x1.0p514;
-  k = 0;
-  where(spc4, k) = -514;
+//   where(spc4_f, ux.f) = ux.f * 0x1.0p514;
+//   k = 0;
+//   where(spc4, k) = -514;
 
-  exp = static_simd_cast<intv<Abi>>((GET_LONGDOUBLE_HI(ux.u) & 0x7fff000000000000UL) >> 48);
-  auto spc5 = ((exp - 0x3ffe) & 1) == 0;
+//   exp = static_simd_cast<intv<Abi>>((GET_LONGDOUBLE_HI(ux.u) & 0x7fff000000000000UL) >> 48);
+//   auto spc5 = ((exp - 0x3ffe) & 1) == 0;
 
-  where(!spc5, k) = k + exp - 0x3fff;
-  where(!spc5, exp) = 0x3fff;
-  where(spc5, k) = k + exp - 0x4000;
-  where(spc5, exp) = 0x4000;
+//   where(!spc5, k) = k + exp - 0x3fff;
+//   where(!spc5, exp) = 0x3fff;
+//   where(spc5, k) = k + exp - 0x4000;
+//   where(spc5, exp) = 0x4000;
 
-  ux.u = (static_simd_cast<uint128v<Abi>>((static_simd_cast<ulongv<Abi>>(exp & 0x7fff) << 48) | (GET_LONGDOUBLE_HI(ux.u) & 0x8000ffffffffffffUL)) << 64) | static_simd_cast<uint128v<Abi>>(GET_LONGDOUBLE_LO(ux.u));
+//   ux.u = (static_simd_cast<uint128v<Abi>>((static_simd_cast<ulongv<Abi>>(exp & 0x7fff) << 48) | (GET_LONGDOUBLE_HI(ux.u) & 0x8000ffffffffffffUL)) << 64) | static_simd_cast<uint128v<Abi>>(GET_LONGDOUBLE_LO(ux.u));
 
-  xn = static_simd_cast<ldoublev<Abi>>(sqrt(static_simd_cast<doublev<Abi>>(ux.f)));
+//   xn = static_simd_cast<ldoublev<Abi>>(sqrt(static_simd_cast<doublev<Abi>>(ux.f)));
 
-  xn = (xn + (ux.f / xn)) * 0.5L;
-  lo = ux.f;
-  ux.u = static_simd_cast<uint128v<Abi>>(GET_LONGDOUBLE_HI(ux.u)) << 64;
-  lo = (lo - ux.f) / xn;
-  xn = xn + (ux.f / xn);
-  ux.f = xn + lo;
-  exp = static_simd_cast<intv<Abi>>((GET_LONGDOUBLE_HI(ux.u) & 0x7fff000000000000UL) >> 48) + (k >> 1) - 1;
-  feclearexcept(FE_INEXACT);
-  r = fegetround();
-  fesetround(FE_TOWARDZERO);
+//   xn = (xn + (ux.f / xn)) * 0.5L;
+//   lo = ux.f;
+//   ux.u = static_simd_cast<uint128v<Abi>>(GET_LONGDOUBLE_HI(ux.u)) << 64;
+//   lo = (lo - ux.f) / xn;
+//   xn = xn + (ux.f / xn);
+//   ux.f = xn + lo;
+//   exp = static_simd_cast<intv<Abi>>((GET_LONGDOUBLE_HI(ux.u) & 0x7fff000000000000UL) >> 48) + (k >> 1) - 1;
+//   feclearexcept(FE_INEXACT);
+//   r = fegetround();
+//   fesetround(FE_TOWARDZERO);
 
-  ux.u = (static_simd_cast<uint128v<Abi>>((static_simd_cast<ulongv<Abi>>(exp & 0x7fff) << 48) | (GET_LONGDOUBLE_HI(ux.u) & 0x8000ffffffffffffUL)) << 64) | static_simd_cast<uint128v<Abi>>(GET_LONGDOUBLE_LO(ux.u));
-  xn = x / ux.f;
-  auto spc6 = simd_mask<long double, Abi>(r == FE_TONEAREST);
-  where(spc6, xn) = inc(xn);
-  auto spc7 = simd_mask<long double, Abi>(r == FE_UPWARD);
-  where(spc7, ux.f) = inc(ux.f);
-  where(spc7, xn) = inc(xn);
-  ux.f = ux.f + xn;
-  feupdateenv(&env);
-  exp = static_simd_cast<intv<Abi>>((GET_LONGDOUBLE_HI(ux.u) & 0x7fff000000000000UL) >> 48) - 1;
-  ux.u = (static_simd_cast<uint128v<Abi>>((static_simd_cast<ulongv<Abi>>(exp & 0x7fff) << 48) | (GET_LONGDOUBLE_HI(ux.u) & 0x8000ffffffffffffUL)) << 64) | static_simd_cast<uint128v<Abi>>(GET_LONGDOUBLE_LO(ux.u));
+//   ux.u = (static_simd_cast<uint128v<Abi>>((static_simd_cast<ulongv<Abi>>(exp & 0x7fff) << 48) | (GET_LONGDOUBLE_HI(ux.u) & 0x8000ffffffffffffUL)) << 64) | static_simd_cast<uint128v<Abi>>(GET_LONGDOUBLE_LO(ux.u));
+//   xn = x / ux.f;
+//   auto spc6 = simd_mask<long double, Abi>(r == FE_TONEAREST);
+//   where(spc6, xn) = inc(xn);
+//   auto spc7 = simd_mask<long double, Abi>(r == FE_UPWARD);
+//   where(spc7, ux.f) = inc(ux.f);
+//   where(spc7, xn) = inc(xn);
+//   ux.f = ux.f + xn;
+//   feupdateenv(&env);
+//   exp = static_simd_cast<intv<Abi>>((GET_LONGDOUBLE_HI(ux.u) & 0x7fff000000000000UL) >> 48) - 1;
+//   ux.u = (static_simd_cast<uint128v<Abi>>((static_simd_cast<ulongv<Abi>>(exp & 0x7fff) << 48) | (GET_LONGDOUBLE_HI(ux.u) & 0x8000ffffffffffffUL)) << 64) | static_simd_cast<uint128v<Abi>>(GET_LONGDOUBLE_LO(ux.u));
 
-  where(spc3_mask, ux.f) = spc3_result;
-  where(spc2_mask, ux.f) = spc2_result;
-  where(spc1_mask, ux.f) = spc1_result;
-  return ux.f;
-}
-#else
-template <class Abi> ldoublev<Abi> sqrt(ldoublev<Abi> x)
-{
-  doublev<Abi> src1, dst;
-  src1 = static_simd_cast<doublev<Abi>>(x);
-  dst = sqrt(src1);
-  return static_simd_cast<ldoublev<Abi>>(dst);
-}
-#endif
+//   where(spc3_mask, ux.f) = spc3_result;
+//   where(spc2_mask, ux.f) = spc2_result;
+//   where(spc1_mask, ux.f) = spc1_result;
+//   return ux.f;
+// }
+// #else
+// template <class Abi> ldoublev<Abi> sqrt(ldoublev<Abi> x)
+// {
+//   doublev<Abi> src1, dst;
+//   src1 = static_simd_cast<doublev<Abi>>(x);
+//   dst = sqrt(src1);
+//   return static_simd_cast<ldoublev<Abi>>(dst);
+// }
+// #endif
 
 template <class Abi>
 floatv<Abi> asin(floatv<Abi> x) {
@@ -9359,40 +9377,40 @@ template <class Abi> ldoublev<Abi> expm1(ldoublev<Abi> x)
 float __expf_idx_tab1[4] = {0, 3.19341815e-08, 1.71142709e-08, -1.47196051e-08};
 float __expf_idx_tab2[4] = {1, 1.18920708, 1.41421354, 1.68179286};
 
-template <class Abi>
-floatv<Abi> exp(floatv<Abi> x) {
-  floatv<Abi> shift_mkl(12583420), invln2_mkl(5.77078009f), ln2_mkl(0.173278809f), 
-  comp_mkl(7.98654582e-06f), a_mkl(0.0416823104f), b_mkl(0.166729242f), c_mkl(0.49999997f);
-  uintv<Abi> mask_mkl(MASKf_exp), mask2_mkl(3);
+// template <class Abi>
+// floatv<Abi> exp(floatv<Abi> x) {
+//   floatv<Abi> shift_mkl(12583420), invln2_mkl(5.77078009f), ln2_mkl(0.173278809f), 
+//   comp_mkl(7.98654582e-06f), a_mkl(0.0416823104f), b_mkl(0.166729242f), c_mkl(0.49999997f);
+//   uintv<Abi> mask_mkl(MASKf_exp), mask2_mkl(3);
 
-  Abi_32suf<Abi> uz;
-  floatv<Abi> n, r, r2, q, y1, y2, y3, yf;
-  uintv<Abi> idx;
+//   Abi_32suf<Abi> uz;
+//   floatv<Abi> n, r, r2, q, y1, y2, y3, yf;
+//   uintv<Abi> idx;
 
-  uz.f = fma(invln2_mkl, x, shift_mkl);
-  n = uz.f - shift_mkl;
-  y2 = fma(n, -ln2_mkl, x);
-  r = fma(-comp_mkl, n, y2);
-  r2 = r * r;
-  q = fma(r, a_mkl, b_mkl);
-  q = fma(r, q, c_mkl);
-  idx = uz.u & mask2_mkl;
+//   uz.f = fma(invln2_mkl, x, shift_mkl);
+//   n = uz.f - shift_mkl;
+//   y2 = fma(n, -ln2_mkl, x);
+//   r = fma(-comp_mkl, n, y2);
+//   r2 = r * r;
+//   q = fma(r, a_mkl, b_mkl);
+//   q = fma(r, q, c_mkl);
+//   idx = uz.u & mask2_mkl;
 
-  for (unsigned i = 0; i < idx.size(); ++i){
-    y1[i] = __expf_idx_tab1[idx[i]];
-    y2[i] = __expf_idx_tab2[idx[i]];
-  }
+//   for (unsigned i = 0; i < idx.size(); ++i){
+//     y1[i] = __expf_idx_tab1[idx[i]];
+//     y2[i] = __expf_idx_tab2[idx[i]];
+//   }
 
-  uz.u <<= 21;
-  q = fma(r2, q, y1);
-  uz.u = uz.u & mask_mkl;
+//   uz.u <<= 21;
+//   q = fma(r2, q, y1);
+//   uz.u = uz.u & mask_mkl;
 
-  y3 = y2 * uz.f;
-  y1 = q + r;
-  yf = fma(y3, y1, y3);
+//   y3 = y2 * uz.f;
+//   y1 = q + r;
+//   yf = fma(y3, y1, y3);
 
-  return yf;
-}
+//   return yf;
+// }
 
 #define LLVM_FLT_MAX FLT_MAX
 #define LLVM_DBL_MAX DBL_MAX
@@ -9405,409 +9423,409 @@ floatv<Abi> exp(floatv<Abi> x) {
 #define LLVM_EXP_DBL_MAX 709.77729768
 #define LLVM_EXP_DBL_MIN -709.77729768
 
-template <class Abi>
-doublev<Abi> exp(doublev<Abi> x) {
-  Abi_64suf<Abi> uz, ux0, ucomp, ux, utemp, utiny;
-  doublev<Abi> n, r, r2, q, p, y;
-  ulongv<Abi> idx, e, u, axu12;
+// template <class Abi>
+// doublev<Abi> exp(doublev<Abi> x) {
+//   Abi_64suf<Abi> uz, ux0, ucomp, ux, utemp, utiny;
+//   doublev<Abi> n, r, r2, q, p, y;
+//   ulongv<Abi> idx, e, u, axu12;
 
-  uz.f = InvLn2_ha * x + Shift_ha;
-  n = uz.f - Shift_ha;
-  r = x - Ln2hi_ha * n;
-  r = r - Ln2lo_ha * n;
-  r2 = r * r;
-  idx = (uz.u & 0x3f) << 1;
-  e = (uz.u & 0xffffffc0) << 46;
+//   uz.f = InvLn2_ha * x + Shift_ha;
+//   n = uz.f - Shift_ha;
+//   r = x - Ln2hi_ha * n;
+//   r = r - Ln2lo_ha * n;
+//   r2 = r * r;
+//   idx = (uz.u & 0x3f) << 1;
+//   e = (uz.u & 0xffffffc0) << 46;
 
-  for (unsigned i = 0; i < idx.size(); ++i){
-    u[i] = *(_etab + idx[i]);
-    ucomp.u[i] = *(_etab + idx[i] + 1);
-  }
+//   for (unsigned i = 0; i < idx.size(); ++i){
+//     u[i] = *(_etab + idx[i]);
+//     ucomp.u[i] = *(_etab + idx[i] + 1);
+//   }
 
-  ux0.u = u ^ e;
-  double w1=0.008333343515397208,w2=0.04166671757732759,w3=0.16666666666652805,w4=0.49999999999962674;
-  q = r * w1 + w2;
-  p = r * w3 + w4;
-  p = fma(r2, q, p);
-  q = r + ucomp.f;
-  q = fma(p, r2, q);
-  y = fma(ux0.f, q, ux0.f);
+//   ux0.u = u ^ e;
+//   double w1=0.008333343515397208,w2=0.04166671757732759,w3=0.16666666666652805,w4=0.49999999999962674;
+//   q = r * w1 + w2;
+//   p = r * w3 + w4;
+//   p = fma(r2, q, p);
+//   q = r + ucomp.f;
+//   q = fma(p, r2, q);
+//   y = fma(ux0.f, q, ux0.f);
 
-  ux.f = x;
-  axu12 = (ux.u >> 52) & 0x7ffUL;
-  utemp.f = 512.0;
-  utiny.f = 0x1p-54;
-  simd_mask<double, Abi> jd = change_simd_mask_type<unsigned long int, double, Abi>((axu12-(utiny.u >> 52)) >= ((utemp.u>>52)-(utiny.u >> 52)));
-  simd_mask<double, Abi> jd1 = change_simd_mask_type<unsigned long int, double, Abi>(axu12 - (utiny.u >> 52) == 0x80000000UL);
-  utemp.f = 1024.0;
-  simd_mask<double, Abi> jd2 = change_simd_mask_type<unsigned long int, double, Abi>(axu12 >= (utemp.u>>52));
-  simd_mask<double, Abi> jd21 = change_simd_mask_type<unsigned long int, double, Abi>(ux.u == 0xfff0000000000000UL);
-  simd_mask<double, Abi> jd22 = change_simd_mask_type<unsigned long int, double, Abi>(ux.u == 0x7ff0000000000000UL);
-  simd_mask<double, Abi> jd23 = change_simd_mask_type<unsigned long int, double, Abi>(axu12 >= 0x7ff);
-  simd_mask<double, Abi> jd24 = x < 0.0;
+//   ux.f = x;
+//   axu12 = (ux.u >> 52) & 0x7ffUL;
+//   utemp.f = 512.0;
+//   utiny.f = 0x1p-54;
+//   simd_mask<double, Abi> jd = change_simd_mask_type<unsigned long int, double, Abi>((axu12-(utiny.u >> 52)) >= ((utemp.u>>52)-(utiny.u >> 52)));
+//   simd_mask<double, Abi> jd1 = change_simd_mask_type<unsigned long int, double, Abi>(axu12 - (utiny.u >> 52) == 0x80000000UL);
+//   utemp.f = 1024.0;
+//   simd_mask<double, Abi> jd2 = change_simd_mask_type<unsigned long int, double, Abi>(axu12 >= (utemp.u>>52));
+//   simd_mask<double, Abi> jd21 = change_simd_mask_type<unsigned long int, double, Abi>(ux.u == 0xfff0000000000000UL);
+//   simd_mask<double, Abi> jd22 = change_simd_mask_type<unsigned long int, double, Abi>(ux.u == 0x7ff0000000000000UL);
+//   simd_mask<double, Abi> jd23 = change_simd_mask_type<unsigned long int, double, Abi>(axu12 >= 0x7ff);
+//   simd_mask<double, Abi> jd24 = x < 0.0;
 
-  where(jd && jd1, y) = 1.0 + x;
-  where(jd && (!jd1) && jd2 && jd21, y) = 0.0;
-  where(jd && (!jd1) && jd2 && !jd21 && jd22, y) = LLVM_INF_64F;
-  where(jd && (!jd1) && jd2 && !(jd21 || jd22) && jd23, y) = 1.0 + x;
-  where(jd && (!jd1) && jd2 && !(jd21 || jd22 || jd23) && jd24, y) = LLVM_DBL_MIN;
-  where(jd && (!jd1) && jd2 && !(jd21 || jd22 || jd23 || jd24), y) = LLVM_DBL_MAX;
+//   where(jd && jd1, y) = 1.0 + x;
+//   where(jd && (!jd1) && jd2 && jd21, y) = 0.0;
+//   where(jd && (!jd1) && jd2 && !jd21 && jd22, y) = LLVM_INF_64F;
+//   where(jd && (!jd1) && jd2 && !(jd21 || jd22) && jd23, y) = 1.0 + x;
+//   where(jd && (!jd1) && jd2 && !(jd21 || jd22 || jd23) && jd24, y) = LLVM_DBL_MIN;
+//   where(jd && (!jd1) && jd2 && !(jd21 || jd22 || jd23 || jd24), y) = LLVM_DBL_MAX;
 
-  where(jd && !(jd1 || jd2) && (x >= LLVM_EXP_DBL_MAX), y) = LLVM_DBL_MAX;
-  where(jd && !(jd1 || jd2) && (x <= LLVM_EXP_DBL_MIN), y) = LLVM_DBL_MIN;
+//   where(jd && !(jd1 || jd2) && (x >= LLVM_EXP_DBL_MAX), y) = LLVM_DBL_MAX;
+//   where(jd && !(jd1 || jd2) && (x <= LLVM_EXP_DBL_MIN), y) = LLVM_DBL_MIN;
 
-  return y;
-}
+//   return y;
+// }
 
 typedef union{
   long double f;
   __uint128_t u;
 } Vml_128suf;
 
-#ifdef LDOUBLE_BINARY128
-template <class Abi> ldoublev<Abi> exp(ldoublev<Abi> x)
-{
-  ldoublev<Abi> C1 = -6.93145751953125E-1L;
-  ldoublev<Abi> C2 = -1.428606820309417232121458176568075500134E-6L;
-  ldoublev<Abi> LOG2EL = 1.442695040888963407359924681001892137426646L;
-  ldoublev<Abi> MAXLOGL = 1.1356523406294143949491931077970764891253E4L;
-  ldoublev<Abi> MINLOGL = -1.143276959615573793352782661133116431383730e4L;
-  ldoublev<Abi> huge = 0x1p10000L;
-  ldoublev<Abi> twom10000 = 0x1p-10000L;
-  ldoublev<Abi> expl_P1 = 3.279723985560247033712687707263393506266E-10L;
-  ldoublev<Abi> expl_P2 = 6.141506007208645008909088812338454698548E-7L;
-  ldoublev<Abi> expl_P3 = 2.708775201978218837374512615596512792224E-4L;
-  ldoublev<Abi> expl_P4 = 3.508710990737834361215404761139478627390E-2L;
-  ldoublev<Abi> expl_P5 = 9.999999999999999999999999999999999998502E-1L;
-  ldoublev<Abi> expl_Q1 = 2.980756652081995192255342779918052538681E-12L;
-  ldoublev<Abi> expl_Q2 = 1.771372078166251484503904874657985291164E-8L;
-  ldoublev<Abi> expl_Q3 = 1.504792651814944826817779302637284053660E-5L;
-  ldoublev<Abi> expl_Q4 = 3.611828913847589925056132680618007270344E-3L;
-  ldoublev<Abi> expl_Q5 = 2.368408864814233538909747618894558968880E-1L;
-  ldoublev<Abi> expl_Q6 = 2.000000000000000000000000000000000000150E0L;
-  ldoublev<Abi> px, xx, polevll;
-  intv<Abi> n;
+// #ifdef LDOUBLE_BINARY128
+// template <class Abi> ldoublev<Abi> exp(ldoublev<Abi> x)
+// {
+//   ldoublev<Abi> C1 = -6.93145751953125E-1L;
+//   ldoublev<Abi> C2 = -1.428606820309417232121458176568075500134E-6L;
+//   ldoublev<Abi> LOG2EL = 1.442695040888963407359924681001892137426646L;
+//   ldoublev<Abi> MAXLOGL = 1.1356523406294143949491931077970764891253E4L;
+//   ldoublev<Abi> MINLOGL = -1.143276959615573793352782661133116431383730e4L;
+//   ldoublev<Abi> huge = 0x1p10000L;
+//   ldoublev<Abi> twom10000 = 0x1p-10000L;
+//   ldoublev<Abi> expl_P1 = 3.279723985560247033712687707263393506266E-10L;
+//   ldoublev<Abi> expl_P2 = 6.141506007208645008909088812338454698548E-7L;
+//   ldoublev<Abi> expl_P3 = 2.708775201978218837374512615596512792224E-4L;
+//   ldoublev<Abi> expl_P4 = 3.508710990737834361215404761139478627390E-2L;
+//   ldoublev<Abi> expl_P5 = 9.999999999999999999999999999999999998502E-1L;
+//   ldoublev<Abi> expl_Q1 = 2.980756652081995192255342779918052538681E-12L;
+//   ldoublev<Abi> expl_Q2 = 1.771372078166251484503904874657985291164E-8L;
+//   ldoublev<Abi> expl_Q3 = 1.504792651814944826817779302637284053660E-5L;
+//   ldoublev<Abi> expl_Q4 = 3.611828913847589925056132680618007270344E-3L;
+//   ldoublev<Abi> expl_Q5 = 2.368408864814233538909747618894558968880E-1L;
+//   ldoublev<Abi> expl_Q6 = 2.000000000000000000000000000000000000150E0L;
+//   ldoublev<Abi> px, xx, polevll;
+//   intv<Abi> n;
 
-  auto spc_mask1 = (x > MAXLOGL);
-  ldoublev<Abi> spc_result1 = huge * huge;
-  auto spc_mask2 = (x < MINLOGL);
-  ldoublev<Abi> spc_result2 = twom10000 * twom10000;
+//   auto spc_mask1 = (x > MAXLOGL);
+//   ldoublev<Abi> spc_result1 = huge * huge;
+//   auto spc_mask2 = (x < MINLOGL);
+//   ldoublev<Abi> spc_result2 = twom10000 * twom10000;
 
-  px = floor(LOG2EL * x + 0.5L);
-  n = static_simd_cast<intv<Abi>>(px);
-  x += px * C1;
-  x += px * C2;
-  xx = x * x;
-  polevll = xx * expl_P1 + expl_P2;
-  polevll = xx * polevll + expl_P3;
-  polevll = xx * polevll + expl_P4;
-  polevll = xx * polevll + expl_P5;
-  px = x * polevll;
-  polevll = xx * expl_Q1 + expl_Q2;
-  polevll = xx * polevll + expl_Q3;
-  polevll = xx * polevll + expl_Q4;
-  polevll = xx * polevll + expl_Q5;
-  polevll = xx * polevll + expl_Q6;
-  xx = polevll;
-  x = px / (xx - px);
-  x = 1.0L + x + x;
-  x = scalbn(x, n);
+//   px = floor(LOG2EL * x + 0.5L);
+//   n = static_simd_cast<intv<Abi>>(px);
+//   x += px * C1;
+//   x += px * C2;
+//   xx = x * x;
+//   polevll = xx * expl_P1 + expl_P2;
+//   polevll = xx * polevll + expl_P3;
+//   polevll = xx * polevll + expl_P4;
+//   polevll = xx * polevll + expl_P5;
+//   px = x * polevll;
+//   polevll = xx * expl_Q1 + expl_Q2;
+//   polevll = xx * polevll + expl_Q3;
+//   polevll = xx * polevll + expl_Q4;
+//   polevll = xx * polevll + expl_Q5;
+//   polevll = xx * polevll + expl_Q6;
+//   xx = polevll;
+//   x = px / (xx - px);
+//   x = 1.0L + x + x;
+//   x = scalbn(x, n);
 
-  where(spc_mask2, x) = spc_result2;
-  where(spc_mask1, x) = spc_result1;
-  return x;
-}
-#else
-template <class Abi> ldoublev<Abi> exp(ldoublev<Abi> x, ldoublev<Abi> y)
-{
-  doublev<Abi> src1, src2, dst;
-  src1 = static_simd_cast<doublev<Abi>>(x);
-  src2 = static_simd_cast<doublev<Abi>>(y);
-  dst = exp(src1, src2);
-  return static_simd_cast<ldoublev<Abi>>(dst);
-}
-#endif
-
-
-
-template <class Abi>
-floatv<Abi> log(floatv<Abi> x) {
-  Abi_32suf<Abi> ux;
-  floatv<Abi> n, y, p, q, r, r2;
-
-  ux.f = x;
-  ux.u = ux.u - TwoThirdf;
-  n = static_simd_cast<floatv<Abi>>(ux.i >> 23);
-
-  ux.u = ux.u & MASKf_mant;
-  ux.u = ux.u + TwoThirdf;
-  r = ux.f - 1.f;
-  r2 = r * r;
-
-  p = _ln_pf[5] * r + _ln_pf[4];
-  q = _ln_pf[3] * r + _ln_pf[2];
-  y = _ln_pf[1] * r + _ln_pf[0];
-  p = _ln_pf[6] * r2 + p;
-  q = p * r2 + q;
-  y = q * r2 + y;
-  // p = static_simd_cast<floatv<Abi>>(LN_2 * static_simd_cast<doublev<Abi>>(n) + static_simd_cast<doublev<Abi>>(r));
-  p = (float)LN_2 * n + r;
-  y = y * r2 + p;
-
-  where(x<=0, y) = s2v<float, floatv<Abi>>(LLVM_NAN_32F);
-  return y;
-}
-
-template <class Abi>
-doublev<Abi> log(doublev<Abi> x) {
-  Abi_64suf<Abi> ux, x6, x9, utmp;
-  Abi_32suf<Abi> xf0;
-  doublev<Abi> n, y, q, p, r, r2, xd0, xd1, tmp;
-  ulongv<Abi> idx, xu16, xu0, m;
-  intv<Abi> ni;
-
-  const double ln2hi=0.6931471805601177;
-  const double ln2lo=-1.7239444212694711e-13;
-  doublev<Abi> one(1.0);
-
-  ux.f = x;
-  xu0 = ux.u & 0x000fffffffffffffUL;
-  ni = static_simd_cast<intv<Abi>>((ux.u >> 52) - 0x000003ffUL);
-  n = static_simd_cast<doublev<Abi>>(ni);
-  xu0 = xu0 ^ 0x07f0000000000000UL;
-  xf0.u = static_simd_cast<uintv<Abi>>(xu0 >> 29);
-  xf0.f = 1/xf0.f;
-  m = static_simd_cast<ulongv<Abi>>(xf0.u + 0x00008000);//uint add
-  x6.u = (m >> 16) << 45;
-  m = x6.u >> 44;
-
-  idx = m & 0x1fe;
-  x9.u = 0x7000000000000000UL ^ xu0;
-
-  for (unsigned i = 0; i < idx.size(); ++i){
-    r[i] = x9.f[i] * x6.f[i] - 1.0;
-  }
-
-  utmp.f = r;
+//   where(spc_mask2, x) = spc_result2;
+//   where(spc_mask1, x) = spc_result1;
+//   return x;
+// }
+// #else
+// template <class Abi> ldoublev<Abi> exp(ldoublev<Abi> x, ldoublev<Abi> y)
+// {
+//   doublev<Abi> src1, src2, dst;
+//   src1 = static_simd_cast<doublev<Abi>>(x);
+//   src2 = static_simd_cast<doublev<Abi>>(y);
+//   dst = exp(src1, src2);
+//   return static_simd_cast<ldoublev<Abi>>(dst);
+// }
+// #endif
 
 
-  for (unsigned i = 0; i < idx.size(); ++i){
-    unsigned long int __idx = idx[i];
-    double __n = n[i];
-    xd1[i] = __log1p_tbl[__idx+1] + ln2lo * __n;
-    xd0[i] = __log1p_tbl[__idx] + ln2hi * __n;
-  }
 
-  r2 = r * r;
-  p = LogB1 + LogB0 * r;
-  tmp = LogB3 + LogB2 * r;
-  q = r + xd0;
-  p = tmp + r2 * p;
-  tmp = LogB5 + r * LogB4;
-  xd0 = q - xd0;
-  p = tmp + r2 * p;
-  tmp = r - xd0 + xd1;
-  p = tmp + r2 * p;
-  y = q + p;
+// template <class Abi>
+// floatv<Abi> log(floatv<Abi> x) {
+//   Abi_32suf<Abi> ux;
+//   floatv<Abi> n, y, p, q, r, r2;
 
-  xu16 = ux.u >> 48;
-  simd_mask<double, Abi> jd = change_simd_mask_type<unsigned long int, double, Abi>(xu16 - 0x0010UL >= 0x7ff0UL - 0x0010UL);
-  simd_mask<double, Abi> jd1 = change_simd_mask_type<unsigned long int, double, Abi>(ux.u * 2 == 0);
-  simd_mask<double, Abi> jd2 = change_simd_mask_type<unsigned long int, double, Abi>(ux.u == 0x7ff0000000000000UL);
-  simd_mask<double, Abi> jd3 = change_simd_mask_type<unsigned long int, double, Abi>(((xu16 & 0x8000) == 0x8000) || ((xu16 & 0x7ff0) == 0x7ff0));
-  where(jd && jd1, y) = LLVM_INF_64F;
-  where(jd && jd2, y) = x;
-  where(jd && jd3, y) = LLVM_NAN_64F;
+//   ux.f = x;
+//   ux.u = ux.u - TwoThirdf;
+//   n = static_simd_cast<floatv<Abi>>(ux.i >> 23);
 
-  return y;
-}
+//   ux.u = ux.u & MASKf_mant;
+//   ux.u = ux.u + TwoThirdf;
+//   r = ux.f - 1.f;
+//   r2 = r * r;
 
-#ifdef LDOUBLE_BINARY128
-template<class Abi>
-ldoublev<Abi> log(ldoublev<Abi> x)
-{
+//   p = _ln_pf[5] * r + _ln_pf[4];
+//   q = _ln_pf[3] * r + _ln_pf[2];
+//   y = _ln_pf[1] * r + _ln_pf[0];
+//   p = _ln_pf[6] * r2 + p;
+//   q = p * r2 + q;
+//   y = q * r2 + y;
+//   // p = static_simd_cast<floatv<Abi>>(LN_2 * static_simd_cast<doublev<Abi>>(n) + static_simd_cast<doublev<Abi>>(r));
+//   p = (float)LN_2 * n + r;
+//   y = y * r2 + p;
 
-  static const long double logtbl[92] = {
--5.5345593589352099112142921677820359632418E-2L,
--5.2108257402767124761784665198737642086148E-2L,
--4.8991686870576856279407775480686721935120E-2L,
--4.5993270766361228596215288742353061431071E-2L,
--4.3110481649613269682442058976885699556950E-2L,
--4.0340872319076331310838085093194799765520E-2L,
--3.7682072451780927439219005993827431503510E-2L,
--3.5131785416234343803903228503274262719586E-2L,
--3.2687785249045246292687241862699949178831E-2L,
--3.0347913785027239068190798397055267411813E-2L,
--2.8110077931525797884641940838507561326298E-2L,
--2.5972247078357715036426583294246819637618E-2L,
--2.3932450635346084858612873953407168217307E-2L,
--2.1988775689981395152022535153795155900240E-2L,
--2.0139364778244501615441044267387667496733E-2L,
--1.8382413762093794819267536615342902718324E-2L,
--1.6716169807550022358923589720001638093023E-2L,
--1.5138929457710992616226033183958974965355E-2L,
--1.3649036795397472900424896523305726435029E-2L,
--1.2244881690473465543308397998034325468152E-2L,
--1.0924898127200937840689817557742469105693E-2L,
--9.6875626072830301572839422532631079809328E-3L,
--8.5313926245226231463436209313499745894157E-3L,
--7.4549452072765973384933565912143044991706E-3L,
--6.4568155251217050991200599386801665681310E-3L,
--5.5356355563671005131126851708522185605193E-3L,
--4.6900728132525199028885749289712348829878E-3L,
--3.9188291218610470766469347968659624282519E-3L,
--3.2206394539524058873423550293617843896540E-3L,
--2.5942708080877805657374888909297113032132E-3L,
--2.0385211375711716729239156839929281289086E-3L,
--1.5522183228760777967376942769773768850872E-3L,
--1.1342191863606077520036253234446621373191E-3L,
--7.8340854719967065861624024730268350459991E-4L,
--4.9869831458030115699628274852562992756174E-4L,
--2.7902661731604211834685052867305795169688E-4L,
--1.2335696813916860754951146082826952093496E-4L,
--3.0677461025892873184042490943581654591817E-5L,
-#define ZERO logtbl[38]
- 0.0000000000000000000000000000000000000000E0L,
--3.0359557945051052537099938863236321874198E-5L,
--1.2081346403474584914595395755316412213151E-4L,
--2.7044071846562177120083903771008342059094E-4L,
--4.7834133324631162897179240322783590830326E-4L,
--7.4363569786340080624467487620270965403695E-4L,
--1.0654639687057968333207323853366578860679E-3L,
--1.4429854811877171341298062134712230604279E-3L,
--1.8753781835651574193938679595797367137975E-3L,
--2.3618380914922506054347222273705859653658E-3L,
--2.9015787624124743013946600163375853631299E-3L,
--3.4938307889254087318399313316921940859043E-3L,
--4.1378413103128673800485306215154712148146E-3L,
--4.8328735414488877044289435125365629849599E-3L,
--5.5782063183564351739381962360253116934243E-3L,
--6.3731336597098858051938306767880719015261E-3L,
--7.2169643436165454612058905294782949315193E-3L,
--8.1090214990427641365934846191367315083867E-3L,
--9.0486422112807274112838713105168375482480E-3L,
--1.0035177140880864314674126398350812606841E-2L,
--1.1067990155502102718064936259435676477423E-2L,
--1.2146457974158024928196575103115488672416E-2L,
--1.3269969823361415906628825374158424754308E-2L,
--1.4437927104692837124388550722759686270765E-2L,
--1.5649743073340777659901053944852735064621E-2L,
--1.6904842527181702880599758489058031645317E-2L,
--1.8202661505988007336096407340750378994209E-2L,
--1.9542647000370545390701192438691126552961E-2L,
--2.0924256670080119637427928803038530924742E-2L,
--2.2346958571309108496179613803760727786257E-2L,
--2.3810230892650362330447187267648486279460E-2L,
--2.5313561699385640380910474255652501521033E-2L,
--2.6856448685790244233704909690165496625399E-2L,
--2.8438398935154170008519274953860128449036E-2L,
--3.0058928687233090922411781058956589863039E-2L,
--3.1717563112854831855692484086486099896614E-2L,
--3.3413836095418743219397234253475252001090E-2L,
--3.5147290019036555862676702093393332533702E-2L,
--3.6917475563073933027920505457688955423688E-2L,
--3.8723951502862058660874073462456610731178E-2L,
--4.0566284516358241168330505467000838017425E-2L,
--4.2444048996543693813649967076598766917965E-2L,
--4.4356826869355401653098777649745233339196E-2L,
--4.6304207416957323121106944474331029996141E-2L,
--4.8285787106164123613318093945035804818364E-2L,
--5.0301169421838218987124461766244507342648E-2L,
--5.2349964705088137924875459464622098310997E-2L,
--5.4431789996103111613753440311680967840214E-2L,
--5.6546268881465384189752786409400404404794E-2L,
--5.8693031345788023909329239565012647817664E-2L,
--6.0871713627532018185577188079210189048340E-2L,
--6.3081958078862169742820420185833800925568E-2L,
--6.5323413029406789694910800219643791556918E-2L,
--6.7595732653791419081537811574227049288168E-2L
-};
+//   where(x<=0, y) = s2v<float, floatv<Abi>>(LLVM_NAN_32F);
+//   return y;
+// }
+
+// template <class Abi>
+// doublev<Abi> log(doublev<Abi> x) {
+//   Abi_64suf<Abi> ux, x6, x9, utmp;
+//   Abi_32suf<Abi> xf0;
+//   doublev<Abi> n, y, q, p, r, r2, xd0, xd1, tmp;
+//   ulongv<Abi> idx, xu16, xu0, m;
+//   intv<Abi> ni;
+
+//   const double ln2hi=0.6931471805601177;
+//   const double ln2lo=-1.7239444212694711e-13;
+//   doublev<Abi> one(1.0);
+
+//   ux.f = x;
+//   xu0 = ux.u & 0x000fffffffffffffUL;
+//   ni = static_simd_cast<intv<Abi>>((ux.u >> 52) - 0x000003ffUL);
+//   n = static_simd_cast<doublev<Abi>>(ni);
+//   xu0 = xu0 ^ 0x07f0000000000000UL;
+//   xf0.u = static_simd_cast<uintv<Abi>>(xu0 >> 29);
+//   xf0.f = 1/xf0.f;
+//   m = static_simd_cast<ulongv<Abi>>(xf0.u + 0x00008000);//uint add
+//   x6.u = (m >> 16) << 45;
+//   m = x6.u >> 44;
+
+//   idx = m & 0x1fe;
+//   x9.u = 0x7000000000000000UL ^ xu0;
+
+//   for (unsigned i = 0; i < idx.size(); ++i){
+//     r[i] = x9.f[i] * x6.f[i] - 1.0;
+//   }
+
+//   utmp.f = r;
 
 
-  long double ln2a = 6.93145751953125e-1L,
-              ln2b = 1.4286068203094172321214581765680755001344E-6L,
-              l3 =   3.333333333333333333333333333333336096926E-1L,
-              l4 =  -2.499999999999999999999999999486853077002E-1L,
-              l5 =   1.999999999999999999999999998515277861905E-1L,
-              l6 =  -1.666666666666666666666798448356171665678E-1L,
-              l7 =   1.428571428571428571428808945895490721564E-1L,
-              l8 =  -1.249999999999999987884655626377588149000E-1L,
-              l9 =   1.111111111111111093947834982832456459186E-1L,
-              l10 = -1.000000000000532974938900317952530453248E-1L,
-              l11 =  9.090909090915566247008015301349979892689E-2L,
-              l12 = -8.333333211818065121250921925397567745734E-2L,
-              l13 =  7.692307559897661630807048686258659316091E-2L,
-              l14 = -7.144242754190814657241902218399056829264E-2L,
-              l15 =  6.668057591071739754844678883223432347481E-2L;
-  ldoublev<Abi> z, y, w, res;
-  Abi_128suf<Abi> u, t;
-  uintv<Abi> m;
-  intv<Abi> k, e;
+//   for (unsigned i = 0; i < idx.size(); ++i){
+//     unsigned long int __idx = idx[i];
+//     double __n = n[i];
+//     xd1[i] = __log1p_tbl[__idx+1] + ln2lo * __n;
+//     xd0[i] = __log1p_tbl[__idx] + ln2hi * __n;
+//   }
 
-  u.f = x;
-  m = GET_LONGDOUBLE_U32_HI(u.u);
-  k = static_simd_cast<intv<Abi>>(m & 0x7fffffff);
+//   r2 = r * r;
+//   p = LogB1 + LogB0 * r;
+//   tmp = LogB3 + LogB2 * r;
+//   q = r + xd0;
+//   p = tmp + r2 * p;
+//   tmp = LogB5 + r * LogB4;
+//   xd0 = q - xd0;
+//   p = tmp + r2 * p;
+//   tmp = r - xd0 + xd1;
+//   p = tmp + r2 * p;
+//   y = q + p;
 
-  auto jd1 = change_simd_mask_type<unsigned int, long double, Abi>((static_simd_cast<uintv<Abi>>(k) | GET_LONGDOUBLE_U32_MID_HI(u.u) | GET_LONGDOUBLE_U32_MID_LO(u.u) | GET_LONGDOUBLE_U32_LO(u.u)) == 0);
-  auto jd2 = change_simd_mask_type<unsigned int, long double, Abi>((m & 0x80000000) != 0);
-  auto jd3 = change_simd_mask_type<int, long double, Abi>(k >= 0x7fff0000);
-  where(jd1, res) =  -0.5L / ZERO;
-  where(!jd1 & jd2, res) = (x - x) / ZERO;
-  where(!jd1 & !jd2 & jd3, res) = x + x;
-  jd1 = !jd1 & !jd2 & !jd3;
+//   xu16 = ux.u >> 48;
+//   simd_mask<double, Abi> jd = change_simd_mask_type<unsigned long int, double, Abi>(xu16 - 0x0010UL >= 0x7ff0UL - 0x0010UL);
+//   simd_mask<double, Abi> jd1 = change_simd_mask_type<unsigned long int, double, Abi>(ux.u * 2 == 0);
+//   simd_mask<double, Abi> jd2 = change_simd_mask_type<unsigned long int, double, Abi>(ux.u == 0x7ff0000000000000UL);
+//   simd_mask<double, Abi> jd3 = change_simd_mask_type<unsigned long int, double, Abi>(((xu16 & 0x8000) == 0x8000) || ((xu16 & 0x7ff0) == 0x7ff0));
+//   where(jd && jd1, y) = LLVM_INF_64F;
+//   where(jd && jd2, y) = x;
+//   where(jd && jd3, y) = LLVM_NAN_64F;
 
-  /* Extract exponent and reduce domain to 0.703125 <= u < 1.40625  */
-  e = static_simd_cast<intv<Abi>>(m >> 16) - (int)0x3ffe;
-  m &= 0xffffU;
-  u.u = ((u.u << 32) >> 32) | (static_simd_cast<uint128v<Abi>>(m | 0x3ffe0000) << 96);
-  m |= 0x10000;
-  /* Find lookup table index k from high order bits of the significand. */
+//   return y;
+// }
 
-  auto jd4 = change_simd_mask_type<unsigned int, int, Abi>(m < 0x16800);
-  k = static_simd_cast<intv<Abi>>((m - 0xfe00) >> 10);
-  t.u = 0x0ULL;
-  t.u = static_simd_cast<uint128v<Abi>>(0x3ffe0000 + (static_simd_cast<uintv<Abi>>(k) << 10)) << 96;
+// #ifdef LDOUBLE_BINARY128
+// template<class Abi>
+// ldoublev<Abi> log(ldoublev<Abi> x)
+// {
 
-  where(jd4, k) = static_simd_cast<intv<Abi>>((m - 0xff00) >> 9);
-  where(change_simd_mask_type<int, long double, Abi>(jd4), t.u) = static_simd_cast<uint128v<Abi>>(0x3fff0000 + (static_simd_cast<uintv<Abi>>(k) << 9)) << 96;
-  where(change_simd_mask_type<int, long double, Abi>(jd4), u.u) = ((u.u << 32) >> 32) | (static_simd_cast<uint128v<Abi>>(GET_LONGDOUBLE_U32_HI(u.u) + 0x10000U) << 96);
-  where(jd4, e) = e - 1;
-  where(jd4, k) = k + 64;
+//   static const long double logtbl[92] = {
+// -5.5345593589352099112142921677820359632418E-2L,
+// -5.2108257402767124761784665198737642086148E-2L,
+// -4.8991686870576856279407775480686721935120E-2L,
+// -4.5993270766361228596215288742353061431071E-2L,
+// -4.3110481649613269682442058976885699556950E-2L,
+// -4.0340872319076331310838085093194799765520E-2L,
+// -3.7682072451780927439219005993827431503510E-2L,
+// -3.5131785416234343803903228503274262719586E-2L,
+// -3.2687785249045246292687241862699949178831E-2L,
+// -3.0347913785027239068190798397055267411813E-2L,
+// -2.8110077931525797884641940838507561326298E-2L,
+// -2.5972247078357715036426583294246819637618E-2L,
+// -2.3932450635346084858612873953407168217307E-2L,
+// -2.1988775689981395152022535153795155900240E-2L,
+// -2.0139364778244501615441044267387667496733E-2L,
+// -1.8382413762093794819267536615342902718324E-2L,
+// -1.6716169807550022358923589720001638093023E-2L,
+// -1.5138929457710992616226033183958974965355E-2L,
+// -1.3649036795397472900424896523305726435029E-2L,
+// -1.2244881690473465543308397998034325468152E-2L,
+// -1.0924898127200937840689817557742469105693E-2L,
+// -9.6875626072830301572839422532631079809328E-3L,
+// -8.5313926245226231463436209313499745894157E-3L,
+// -7.4549452072765973384933565912143044991706E-3L,
+// -6.4568155251217050991200599386801665681310E-3L,
+// -5.5356355563671005131126851708522185605193E-3L,
+// -4.6900728132525199028885749289712348829878E-3L,
+// -3.9188291218610470766469347968659624282519E-3L,
+// -3.2206394539524058873423550293617843896540E-3L,
+// -2.5942708080877805657374888909297113032132E-3L,
+// -2.0385211375711716729239156839929281289086E-3L,
+// -1.5522183228760777967376942769773768850872E-3L,
+// -1.1342191863606077520036253234446621373191E-3L,
+// -7.8340854719967065861624024730268350459991E-4L,
+// -4.9869831458030115699628274852562992756174E-4L,
+// -2.7902661731604211834685052867305795169688E-4L,
+// -1.2335696813916860754951146082826952093496E-4L,
+// -3.0677461025892873184042490943581654591817E-5L,
+// #define ZERO logtbl[38]
+//  0.0000000000000000000000000000000000000000E0L,
+// -3.0359557945051052537099938863236321874198E-5L,
+// -1.2081346403474584914595395755316412213151E-4L,
+// -2.7044071846562177120083903771008342059094E-4L,
+// -4.7834133324631162897179240322783590830326E-4L,
+// -7.4363569786340080624467487620270965403695E-4L,
+// -1.0654639687057968333207323853366578860679E-3L,
+// -1.4429854811877171341298062134712230604279E-3L,
+// -1.8753781835651574193938679595797367137975E-3L,
+// -2.3618380914922506054347222273705859653658E-3L,
+// -2.9015787624124743013946600163375853631299E-3L,
+// -3.4938307889254087318399313316921940859043E-3L,
+// -4.1378413103128673800485306215154712148146E-3L,
+// -4.8328735414488877044289435125365629849599E-3L,
+// -5.5782063183564351739381962360253116934243E-3L,
+// -6.3731336597098858051938306767880719015261E-3L,
+// -7.2169643436165454612058905294782949315193E-3L,
+// -8.1090214990427641365934846191367315083867E-3L,
+// -9.0486422112807274112838713105168375482480E-3L,
+// -1.0035177140880864314674126398350812606841E-2L,
+// -1.1067990155502102718064936259435676477423E-2L,
+// -1.2146457974158024928196575103115488672416E-2L,
+// -1.3269969823361415906628825374158424754308E-2L,
+// -1.4437927104692837124388550722759686270765E-2L,
+// -1.5649743073340777659901053944852735064621E-2L,
+// -1.6904842527181702880599758489058031645317E-2L,
+// -1.8202661505988007336096407340750378994209E-2L,
+// -1.9542647000370545390701192438691126552961E-2L,
+// -2.0924256670080119637427928803038530924742E-2L,
+// -2.2346958571309108496179613803760727786257E-2L,
+// -2.3810230892650362330447187267648486279460E-2L,
+// -2.5313561699385640380910474255652501521033E-2L,
+// -2.6856448685790244233704909690165496625399E-2L,
+// -2.8438398935154170008519274953860128449036E-2L,
+// -3.0058928687233090922411781058956589863039E-2L,
+// -3.1717563112854831855692484086486099896614E-2L,
+// -3.3413836095418743219397234253475252001090E-2L,
+// -3.5147290019036555862676702093393332533702E-2L,
+// -3.6917475563073933027920505457688955423688E-2L,
+// -3.8723951502862058660874073462456610731178E-2L,
+// -4.0566284516358241168330505467000838017425E-2L,
+// -4.2444048996543693813649967076598766917965E-2L,
+// -4.4356826869355401653098777649745233339196E-2L,
+// -4.6304207416957323121106944474331029996141E-2L,
+// -4.8285787106164123613318093945035804818364E-2L,
+// -5.0301169421838218987124461766244507342648E-2L,
+// -5.2349964705088137924875459464622098310997E-2L,
+// -5.4431789996103111613753440311680967840214E-2L,
+// -5.6546268881465384189752786409400404404794E-2L,
+// -5.8693031345788023909329239565012647817664E-2L,
+// -6.0871713627532018185577188079210189048340E-2L,
+// -6.3081958078862169742820420185833800925568E-2L,
+// -6.5323413029406789694910800219643791556918E-2L,
+// -6.7595732653791419081537811574227049288168E-2L
+// };
 
-  jd2 = ((x <= 1.0078125L) && (x >= 0.9921875L));
-  where(jd2, z) = x - 1.0L;
-  where(!jd2, z) = (u.f - t.f) / t.f;
-  where(change_simd_mask_type<long double, int, Abi>(jd2), k) = 64;
-  where((jd2), t.f) = 1.0L;
-  where(change_simd_mask_type<long double, int, Abi>(jd2), e) = 0;
+
+//   long double ln2a = 6.93145751953125e-1L,
+//               ln2b = 1.4286068203094172321214581765680755001344E-6L,
+//               l3 =   3.333333333333333333333333333333336096926E-1L,
+//               l4 =  -2.499999999999999999999999999486853077002E-1L,
+//               l5 =   1.999999999999999999999999998515277861905E-1L,
+//               l6 =  -1.666666666666666666666798448356171665678E-1L,
+//               l7 =   1.428571428571428571428808945895490721564E-1L,
+//               l8 =  -1.249999999999999987884655626377588149000E-1L,
+//               l9 =   1.111111111111111093947834982832456459186E-1L,
+//               l10 = -1.000000000000532974938900317952530453248E-1L,
+//               l11 =  9.090909090915566247008015301349979892689E-2L,
+//               l12 = -8.333333211818065121250921925397567745734E-2L,
+//               l13 =  7.692307559897661630807048686258659316091E-2L,
+//               l14 = -7.144242754190814657241902218399056829264E-2L,
+//               l15 =  6.668057591071739754844678883223432347481E-2L;
+//   ldoublev<Abi> z, y, w, res;
+//   Abi_128suf<Abi> u, t;
+//   uintv<Abi> m;
+//   intv<Abi> k, e;
+
+//   u.f = x;
+//   m = GET_LONGDOUBLE_U32_HI(u.u);
+//   k = static_simd_cast<intv<Abi>>(m & 0x7fffffff);
+
+//   auto jd1 = change_simd_mask_type<unsigned int, long double, Abi>((static_simd_cast<uintv<Abi>>(k) | GET_LONGDOUBLE_U32_MID_HI(u.u) | GET_LONGDOUBLE_U32_MID_LO(u.u) | GET_LONGDOUBLE_U32_LO(u.u)) == 0);
+//   auto jd2 = change_simd_mask_type<unsigned int, long double, Abi>((m & 0x80000000) != 0);
+//   auto jd3 = change_simd_mask_type<int, long double, Abi>(k >= 0x7fff0000);
+//   where(jd1, res) =  -0.5L / ZERO;
+//   where(!jd1 & jd2, res) = (x - x) / ZERO;
+//   where(!jd1 & !jd2 & jd3, res) = x + x;
+//   jd1 = !jd1 & !jd2 & !jd3;
+
+//   /* Extract exponent and reduce domain to 0.703125 <= u < 1.40625  */
+//   e = static_simd_cast<intv<Abi>>(m >> 16) - (int)0x3ffe;
+//   m &= 0xffffU;
+//   u.u = ((u.u << 32) >> 32) | (static_simd_cast<uint128v<Abi>>(m | 0x3ffe0000) << 96);
+//   m |= 0x10000;
+//   /* Find lookup table index k from high order bits of the significand. */
+
+//   auto jd4 = change_simd_mask_type<unsigned int, int, Abi>(m < 0x16800);
+//   k = static_simd_cast<intv<Abi>>((m - 0xfe00) >> 10);
+//   t.u = 0x0ULL;
+//   t.u = static_simd_cast<uint128v<Abi>>(0x3ffe0000 + (static_simd_cast<uintv<Abi>>(k) << 10)) << 96;
+
+//   where(jd4, k) = static_simd_cast<intv<Abi>>((m - 0xff00) >> 9);
+//   where(change_simd_mask_type<int, long double, Abi>(jd4), t.u) = static_simd_cast<uint128v<Abi>>(0x3fff0000 + (static_simd_cast<uintv<Abi>>(k) << 9)) << 96;
+//   where(change_simd_mask_type<int, long double, Abi>(jd4), u.u) = ((u.u << 32) >> 32) | (static_simd_cast<uint128v<Abi>>(GET_LONGDOUBLE_U32_HI(u.u) + 0x10000U) << 96);
+//   where(jd4, e) = e - 1;
+//   where(jd4, k) = k + 64;
+
+//   jd2 = ((x <= 1.0078125L) && (x >= 0.9921875L));
+//   where(jd2, z) = x - 1.0L;
+//   where(!jd2, z) = (u.f - t.f) / t.f;
+//   where(change_simd_mask_type<long double, int, Abi>(jd2), k) = 64;
+//   where((jd2), t.f) = 1.0L;
+//   where(change_simd_mask_type<long double, int, Abi>(jd2), e) = 0;
 
   
-  /* Series expansion of log(1+z).  */
+//   /* Series expansion of log(1+z).  */
   
-  w = z * z;
-  y = ((((((((((((l15 * z + l14) * z + l13) * z + l12) * z + l11) * z + l10) * z + l9) * z + l8) * z + l7) * z + l6) * z + l5) * z + l4) * z + l3) * z * w;
-  y -= 0.5 * w;
-  y += static_simd_cast<ldoublev<Abi>>(e) * ln2b; /* Base 2 exponent offset times ln(2).  */
-  y += z;
-  for(size_t i = 0; i < x.size(); i++)
-  {
-    if(jd1[i])
-      y[i] += logtbl[k[i] - 26]; /* log(t) - (t-1) */
-  }
+//   w = z * z;
+//   y = ((((((((((((l15 * z + l14) * z + l13) * z + l12) * z + l11) * z + l10) * z + l9) * z + l8) * z + l7) * z + l6) * z + l5) * z + l4) * z + l3) * z * w;
+//   y -= 0.5 * w;
+//   y += static_simd_cast<ldoublev<Abi>>(e) * ln2b; /* Base 2 exponent offset times ln(2).  */
+//   y += z;
+//   for(size_t i = 0; i < x.size(); i++)
+//   {
+//     if(jd1[i])
+//       y[i] += logtbl[k[i] - 26]; /* log(t) - (t-1) */
+//   }
   
-  y += (t.f - 1.0L);
-  y += static_simd_cast<ldoublev<Abi>>(e) * ln2a;
-  where(jd1, res) = y;
-  return res;
-}
-#else
-template <class Abi> ldoublev<Abi> log(ldoublev<Abi> x)
-{
-  doublev<Abi> xd = static_simd_cast<doublev<Abi>>(x);
-  xd = log(xd);
-  return static_simd_cast<ldoublev<Abi>>(xd);
-}
-#endif
+//   y += (t.f - 1.0L);
+//   y += static_simd_cast<ldoublev<Abi>>(e) * ln2a;
+//   where(jd1, res) = y;
+//   return res;
+// }
+// #else
+// template <class Abi> ldoublev<Abi> log(ldoublev<Abi> x)
+// {
+//   doublev<Abi> xd = static_simd_cast<doublev<Abi>>(x);
+//   xd = log(xd);
+//   return static_simd_cast<ldoublev<Abi>>(xd);
+// }
+// #endif
 
 template <class Abi>
 floatv<Abi> log1p(floatv<Abi> x){
@@ -16364,48 +16382,48 @@ template <class Abi> ldoublev<Abi> exp2(ldoublev<Abi> x)
 }
 #endif
 
-template <class Abi>
-scharv<Abi> abs(scharv<Abi> j){
-  where(j<0, j) = ~j + 0x1;
-  return j;
-}
-template <class Abi> shortv<Abi> abs(shortv<Abi> j){
-  where(j<0, j) = ~j + 0x1;
-  return j;
-}
-template <class Abi> intv<Abi> abs(intv<Abi> j){
-  where(j<0, j) = ~j + 0x1;
-  return j;
-}
-template <class Abi> longv<Abi> abs(longv<Abi> j){
-  where(j<0, j) = ~j + 0x1;
-  return j;
-}
-template <class Abi> llongv<Abi> abs(llongv<Abi> j){
-  where(j<0, j) = ~j + 0x1;
-  return j;
-}
-template <class Abi> floatv<Abi> abs(floatv<Abi> j){
-  Abi_32suf<Abi> ux;
-  ux.f = j;
-  ux.u = ux.u & (unsigned int)(AbsMaskf);
-  return ux.f;
-}
-template <class Abi> doublev<Abi> abs(doublev<Abi> j){
-  Abi_64suf<Abi> ux;
-  ux.f = j;
-  ux.u = ux.u & (AbsMask);
-  return ux.f;
-}
+// template <class Abi>
+// scharv<Abi> abs(scharv<Abi> j){
+//   where(j<0, j) = ~j + 0x1;
+//   return j;
+// }
+// template <class Abi> shortv<Abi> abs(shortv<Abi> j){
+//   where(j<0, j) = ~j + 0x1;
+//   return j;
+// }
+// template <class Abi> intv<Abi> abs(intv<Abi> j){
+//   where(j<0, j) = ~j + 0x1;
+//   return j;
+// }
+// template <class Abi> longv<Abi> abs(longv<Abi> j){
+//   where(j<0, j) = ~j + 0x1;
+//   return j;
+// }
+// template <class Abi> llongv<Abi> abs(llongv<Abi> j){
+//   where(j<0, j) = ~j + 0x1;
+//   return j;
+// }
+// template <class Abi> floatv<Abi> abs(floatv<Abi> j){
+//   Abi_32suf<Abi> ux;
+//   ux.f = j;
+//   ux.u = ux.u & (unsigned int)(AbsMaskf);
+//   return ux.f;
+// }
+// template <class Abi> doublev<Abi> abs(doublev<Abi> j){
+//   Abi_64suf<Abi> ux;
+//   ux.f = j;
+//   ux.u = ux.u & (AbsMask);
+//   return ux.f;
+// }
 
-template <class Abi> ldoublev<Abi> abs(ldoublev<Abi> j){
-  Abi_128suf<Abi> ux;
-  ux.f = j;
-  __uint128_t sign_mask = 0x1;
-  sign_mask = ~(sign_mask << 127);
-  ux.u = ux.u & sign_mask;
-  return ux.f;
-}
+// template <class Abi> ldoublev<Abi> abs(ldoublev<Abi> j){
+//   Abi_128suf<Abi> ux;
+//   ux.f = j;
+//   __uint128_t sign_mask = 0x1;
+//   sign_mask = ~(sign_mask << 127);
+//   ux.u = ux.u & sign_mask;
+//   return ux.f;
+// }
 
 template <class V> struct simd_div_t { V quot, rem; };
 

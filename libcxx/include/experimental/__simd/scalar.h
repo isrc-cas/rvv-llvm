@@ -151,6 +151,12 @@ struct __simd_traits<_Tp, simd_abi::__scalar> {
   }
 
   static _Simd __sqrt(_Simd __s) { return sqrt(__s.__data); }
+
+  static _Simd __abs(_Simd __s) { return abs(__s.__data); }
+
+  static _Simd __exp(_Simd __s) { return exp(__s.__data); }
+
+  static _Simd __log(_Simd __s) { return log(__s.__data); }
 };
 
 template <class _Tp>
