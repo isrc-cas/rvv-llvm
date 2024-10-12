@@ -16670,33 +16670,14 @@ floatv<Abi> trunc(floatv<Abi> x){
   return x;
 }
 
-template <class Abi> 
-doublev<Abi> trunc(doublev<Abi> x){
-  intv<Abi> j0, i0, sx;
-  uintv<Abi> i1;
-
-  Abi_64suf<Abi> pf_x;
-  pf_x.f = x;
-  i0 = static_simd_cast<intv<Abi>>(pf_x.u >> 32);
-  i1 = static_simd_cast<uintv<Abi>>((pf_x.u << 32) >> 32);
-  sx = static_simd_cast<intv<Abi>>(static_simd_cast<uintv<Abi>>(i0) & 0x80000000);
-  j0 = ((i0 >> 20) & 0x7ff) - 0x3ff;
-
-  auto jd1 = change_simd_mask_type<int, double, Abi>(j0 < 20);
-  auto jd2 = change_simd_mask_type<int, double, Abi>(j0 < 0);
-  where(jd1 & jd2, pf_x.u) = ((pf_x.u << 32) >> 32) | (static_simd_cast<ulongv<Abi>>(sx) << 32);
-  where(jd1, pf_x.u) = ((pf_x.u >> 32) << 32);
-  where(jd1 & !jd2, pf_x.u) = ((pf_x.u << 32) >> 32) | ((static_simd_cast<ulongv<Abi>>(sx | (i0 & ~(0x000fffff >> j0)))) << 32);
-  where(jd1, x) = pf_x.f;
-
-  jd2 = change_simd_mask_type<int, double, Abi>(j0 > 51);
-  where(jd2 & change_simd_mask_type<int, double, Abi>(j0 == 0x4000), x) = x + x;
-
-  where(!jd1 & !jd2,  pf_x.u) =  ((pf_x.u << 32) >> 32) | (static_simd_cast<ulongv<Abi>>(i0) << 32);
-  where(!jd1 & !jd2,  pf_x.u) = ((pf_x.u << 32) >> 32) | static_simd_cast<ulongv<Abi>>(i1 & ~(0xffffffffu  >> static_simd_cast<uintv<Abi>>(j0 - 20)));
-  where(!jd1 & !jd2,  x) = pf_x.f;
-
-  return x;
+template <class Abi>
+doublev<Abi> trunc(doublev<Abi> x) {
+    constexpr size_t size = doublev<Abi>::size();
+    doublev<Abi> result;
+    for (size_t i = 0; i < size; ++i) {
+        result[i] = ::trunc(x[i]);
+    }
+    return result;
 }
 
 #ifdef LDOUBLE_BINARY128
@@ -23980,221 +23961,25 @@ doublev<Abi> sin_piv(doublev<Abi> x)
   return res;
 }
 
-
-
-template <class Abi> 
-doublev<Abi> lgamma(doublev<Abi> x){
-  static const double
-pi  =  3.14159265358979311600e+00, /* 0x400921FB, 0x54442D18 */
-a0  =  7.72156649015328655494e-02, /* 0x3FB3C467, 0xE37DB0C8 */
-a1  =  3.22467033424113591611e-01, /* 0x3FD4A34C, 0xC4A60FAD */
-a2  =  6.73523010531292681824e-02, /* 0x3FB13E00, 0x1A5562A7 */
-a3  =  2.05808084325167332806e-02, /* 0x3F951322, 0xAC92547B */
-a4  =  7.38555086081402883957e-03, /* 0x3F7E404F, 0xB68FEFE8 */
-a5  =  2.89051383673415629091e-03, /* 0x3F67ADD8, 0xCCB7926B */
-a6  =  1.19270763183362067845e-03, /* 0x3F538A94, 0x116F3F5D */
-a7  =  5.10069792153511336608e-04, /* 0x3F40B6C6, 0x89B99C00 */
-a8  =  2.20862790713908385557e-04, /* 0x3F2CF2EC, 0xED10E54D */
-a9  =  1.08011567247583939954e-04, /* 0x3F1C5088, 0x987DFB07 */
-a10 =  2.52144565451257326939e-05, /* 0x3EFA7074, 0x428CFA52 */
-a11 =  4.48640949618915160150e-05, /* 0x3F07858E, 0x90A45837 */
-tc  =  1.46163214496836224576e+00, /* 0x3FF762D8, 0x6356BE3F */
-tf  = -1.21486290535849611461e-01, /* 0xBFBF19B9, 0xBCC38A42 */
-/* tt = -(tail of tf) */
-tt  = -3.63867699703950536541e-18, /* 0xBC50C7CA, 0xA48A971F */
-t0  =  4.83836122723810047042e-01, /* 0x3FDEF72B, 0xC8EE38A2 */
-t1  = -1.47587722994593911752e-01, /* 0xBFC2E427, 0x8DC6C509 */
-t2  =  6.46249402391333854778e-02, /* 0x3FB08B42, 0x94D5419B */
-t3  = -3.27885410759859649565e-02, /* 0xBFA0C9A8, 0xDF35B713 */
-t4  =  1.79706750811820387126e-02, /* 0x3F9266E7, 0x970AF9EC */
-t5  = -1.03142241298341437450e-02, /* 0xBF851F9F, 0xBA91EC6A */
-t6  =  6.10053870246291332635e-03, /* 0x3F78FCE0, 0xE370E344 */
-t7  = -3.68452016781138256760e-03, /* 0xBF6E2EFF, 0xB3E914D7 */
-t8  =  2.25964780900612472250e-03, /* 0x3F6282D3, 0x2E15C915 */
-t9  = -1.40346469989232843813e-03, /* 0xBF56FE8E, 0xBF2D1AF1 */
-t10 =  8.81081882437654011382e-04, /* 0x3F4CDF0C, 0xEF61A8E9 */
-t11 = -5.38595305356740546715e-04, /* 0xBF41A610, 0x9C73E0EC */
-t12 =  3.15632070903625950361e-04, /* 0x3F34AF6D, 0x6C0EBBF7 */
-t13 = -3.12754168375120860518e-04, /* 0xBF347F24, 0xECC38C38 */
-t14 =  3.35529192635519073543e-04, /* 0x3F35FD3E, 0xE8C2D3F4 */
-u0  = -7.72156649015328655494e-02, /* 0xBFB3C467, 0xE37DB0C8 */
-u1  =  6.32827064025093366517e-01, /* 0x3FE4401E, 0x8B005DFF */
-u2  =  1.45492250137234768737e+00, /* 0x3FF7475C, 0xD119BD6F */
-u3  =  9.77717527963372745603e-01, /* 0x3FEF4976, 0x44EA8450 */
-u4  =  2.28963728064692451092e-01, /* 0x3FCD4EAE, 0xF6010924 */
-u5  =  1.33810918536787660377e-02, /* 0x3F8B678B, 0xBF2BAB09 */
-v1  =  2.45597793713041134822e+00, /* 0x4003A5D7, 0xC2BD619C */
-v2  =  2.12848976379893395361e+00, /* 0x40010725, 0xA42B18F5 */
-v3  =  7.69285150456672783825e-01, /* 0x3FE89DFB, 0xE45050AF */
-v4  =  1.04222645593369134254e-01, /* 0x3FBAAE55, 0xD6537C88 */
-v5  =  3.21709242282423911810e-03, /* 0x3F6A5ABB, 0x57D0CF61 */
-s0  = -7.72156649015328655494e-02, /* 0xBFB3C467, 0xE37DB0C8 */
-s1  =  2.14982415960608852501e-01, /* 0x3FCB848B, 0x36E20878 */
-s2  =  3.25778796408930981787e-01, /* 0x3FD4D98F, 0x4F139F59 */
-s3  =  1.46350472652464452805e-01, /* 0x3FC2BB9C, 0xBEE5F2F7 */
-s4  =  2.66422703033638609560e-02, /* 0x3F9B481C, 0x7E939961 */
-s5  =  1.84028451407337715652e-03, /* 0x3F5E26B6, 0x7368F239 */
-s6  =  3.19475326584100867617e-05, /* 0x3F00BFEC, 0xDD17E945 */
-r1  =  1.39200533467621045958e+00, /* 0x3FF645A7, 0x62C4AB74 */
-r2  =  7.21935547567138069525e-01, /* 0x3FE71A18, 0x93D3DCDC */
-r3  =  1.71933865632803078993e-01, /* 0x3FC601ED, 0xCCFBDF27 */
-r4  =  1.86459191715652901344e-02, /* 0x3F9317EA, 0x742ED475 */
-r5  =  7.77942496381893596434e-04, /* 0x3F497DDA, 0xCA41A95B */
-r6  =  7.32668430744625636189e-06, /* 0x3EDEBAF7, 0xA5B38140 */
-w0  =  4.18938533204672725052e-01, /* 0x3FDACFE3, 0x90C97D69 */
-w1  =  8.33333333333329678849e-02, /* 0x3FB55555, 0x5555553B */
-w2  = -2.77777777728775536470e-03, /* 0xBF66C16C, 0x16B02E5C */
-w3  =  7.93650558643019558500e-04, /* 0x3F4A019F, 0x98CF38B6 */
-w4  = -5.95187557450339963135e-04, /* 0xBF4380CB, 0x8C0FE741 */
-w5  =  8.36339918996282139126e-04, /* 0x3F4B67BA, 0x4CDAD5D1 */
-w6  = -1.63092934096575273989e-03; /* 0xBF5AB89D, 0x0B9E43E4 */
-
-    doublev<Abi> res;
-    Abi_64suf<Abi> u;
-    doublev<Abi> t,y,z,nadj,p,p1,p2,p3,q,r,w;
-    uintv<Abi> ix;
-    intv<Abi> sign,i;
-
-    doublev<Abi> ttx;
-    ttx = x;
-
-    /* purge off +-inf, NaN, +-0, tiny and negative arguments */
-    u.f = x;
-    sign = static_simd_cast<intv<Abi>>(u.u>>63);
-    ix = static_simd_cast<uintv<Abi>>(u.u>>32) & 0x7fffffffU;
-
-
-    auto jd1 = change_simd_mask_type<int, double, Abi>(sign != 0);
-    where(jd1, x) = -x;
-    where(jd1, t) = sin_piv(x);
-
-    where(jd1 & (t < 0.0), t) = -t;
-    where(jd1, nadj) = log(pi/(t*x));
-
-    jd1 = change_simd_mask_type<unsigned int, double, Abi>(
-        (ix == 0x3ff00000U | ix == 0x40000000U) 
-        & (static_simd_cast<uintv<Abi>>(u.u) == 0)
-    );
-    where(jd1, r) = 0;
-
-
-    auto jd2 = change_simd_mask_type<unsigned int, double, Abi>(ix < 0x40000000);
-    auto jdtmp = !jd1 & jd2;
-    auto jdmask = !jd1 & !jd2;
-
-    jd1 = change_simd_mask_type<unsigned int, double, Abi>(ix <= 0x3feccccc);
-    where(jdtmp & jd1, r) = -log(x);;
-    where(jdtmp & !jd1, r) = 0.0;
-
-    for(size_t index = 0; index < x.size(); index++)
-    {
-      if(jdtmp[index])
-      {
-        if (jd1[index]) {   /* lgamma(x) = lgamma(x+1)-log(x) */
-          if (ix[index] >= 0x3FE76944) {
-            y[index] = 1.0 - x[index];
-            i[index] = 0;
-          } else if (ix[index] >= 0x3FCDA661) {
-            y[index] = x[index] - (tc-1.0);
-            i[index] = 1;
-          } else {
-            y[index] = x[index];
-            i[index] = 2;
-          }
-        } else {
-          if (ix[index] >= 0x3FFBB4C3) {  /* [1.7316,2] */
-            y[index] = 2.0 - x[index];
-            i[index] = 0;
-          } else if(ix[index] >= 0x3FF3B4C4) {  /* [1.23,1.73] */
-            y[index] = x[index] - tc;
-            i[index] = 1;
-          } else {
-            y[index] = x[index] - 1.0;
-            i[index] = 2;
-          }
-        }
-      }
+template <class Abi>
+doublev<Abi> lgamma(doublev<Abi> x) {
+    constexpr size_t size = doublev<Abi>::size();
+    doublev<Abi> result;
+    for (size_t i = 0; i < size; ++i) {
+        result[i] = ::lgamma(x[i]);
     }
-
-    auto jdmask0 = jdtmp & change_simd_mask_type<int, double>(i == 0);
-    auto jdmask1 = jdtmp & change_simd_mask_type<int, double>(i == 1);
-    auto jdmask2 = jdtmp & change_simd_mask_type<int, double>(i == 2);
-
-    where(jdmask0, z) = y*y;
-    where(jdmask0, p1) = a0+z*(a2+z*(a4+z*(a6+z*(a8+z*a10))));
-    where(jdmask0, p2) = z*(a1+z*(a3+z*(a5+z*(a7+z*(a9+z*a11)))));
-    where(jdmask0, p) = y*p1+p2;
-    where(jdmask0, r) = r + (p-0.5*y);
-
-    where(jdmask1, z) = y*y;
-    where(jdmask1, w) = z*y;
-    where(jdmask1, p1) = t0+w*(t3+w*(t6+w*(t9 +w*t12)));    /* parallel comp */
-    where(jdmask1, p2) = t1+w*(t4+w*(t7+w*(t10+w*t13)));
-    where(jdmask1, p3) = t2+w*(t5+w*(t8+w*(t11+w*t14)));
-    where(jdmask1, p) = z*p1-(tt-w*(p2+y*p3));
-    where(jdmask1, r) = r + tf + p;
-
-    where(jdmask2, p1) = y*(u0+y*(u1+y*(u2+y*(u3+y*(u4+y*u5)))));
-    where(jdmask2, p2) = 1.0+y*(v1+y*(v2+y*(v3+y*(v4+y*v5))));
-    where(jdmask2, r) =  r + (-0.5)*y + p1/p2;
-
-
-    auto jd3 = change_simd_mask_type<unsigned int, double, Abi>(ix < 0x40200000);
-    jdtmp = jdmask & jd3;
-    jdmask = jdmask & !jd3;
-
-    where(change_simd_mask_type<double ,int, Abi>(jdtmp), i) = static_simd_cast<intv<Abi>>(x);
-    where(jdtmp, y) = x - static_simd_cast<doublev<Abi>>(i);
-    where(jdtmp, p) = y*(s0+y*(s1+y*(s2+y*(s3+y*(s4+y*(s5+y*s6))))));
-    where(jdtmp, q) = 1.0+y*(r1+y*(r2+y*(r3+y*(r4+y*(r5+y*r6)))));
-    where(jdtmp, r) = 0.5*y+p/q;
-    where(jdtmp, z) = 1.0;    /* lgamma(1+s) = log(s) + lgamma(s) */
-
-
-         jdmask0 = jdtmp & change_simd_mask_type<int, double>(i == 7);
-         jdmask1 = jdtmp & change_simd_mask_type<int, double>(i == 6);
-         jdmask2 = jdtmp & change_simd_mask_type<int, double>(i == 5);
-    auto jdmask3 = jdtmp & change_simd_mask_type<int, double>(i == 4);
-    auto jdmask4 = jdtmp & change_simd_mask_type<int, double>(i == 3);
-
-    where(jdmask0, z) = ((((z * y + 6.0)* y + 5.0)* y + 4.0)* y + 3.0)* y + 2.0;  /* FALLTHRU */
-    where(jdmask1, z) = (((z * y + 5.0)* y + 4.0)* y + 3.0)* y + 2.0;  /* FALLTHRU */
-    where(jdmask2, z) = ((z * y + 4.0)* y + 3.0)* y + 2.0;  /* FALLTHRU */
-    where(jdmask3, z) = (z* y + 3.0)* y + 2.0;  /* FALLTHRU */
-    where(jdmask4, z) = z * y + 2.0;  /* FALLTHRU */
-    where(jdmask0|jdmask1|jdmask2|jdmask3|jdmask4, r) = r + log(z);
-
-    auto jd4 = change_simd_mask_type<unsigned int, double, Abi>(ix < 0x43900000);
-    jdtmp = jdmask & jd4;
-    jdmask = jdmask & !jd4;
-
-    where(jdtmp, t) = log(x);
-    where(jdtmp, z) = 1.0/x;
-    where(jdtmp, y) = z*z;
-    where(jdtmp, w) = w0+z*(w1+y*(w2+y*(w3+y*(w4+y*(w5+y*w6)))));
-    where(jdtmp, r) = (x-0.5)*(t-1.0)+w;
-    where(jdmask, r) =  x*(log(x)-1.0);
-      
-    where(change_simd_mask_type<int, double, Abi>(sign != 0), r) = nadj - r;
-    res = r;
-
-    jd1 = change_simd_mask_type<unsigned int, double, Abi>(ix >= 0x7ff00000);
-    jd2 = change_simd_mask_type<unsigned int, double, Abi>(ix < (0x3ff-70)<<20);
-
-    where(jd1, res) = ttx*ttx;
-    where(!jd1 & jd2, res) = -log(abs(ttx));
-    jd3 = !jd1 & !jd2 & change_simd_mask_type<int, double, Abi>(sign != 0);
-    where(jd3, ttx) = sin_piv(abs(ttx));
-    where(jd3 & (t == 0.0), res) = 1.0/(ttx-ttx);
-
-    return res;
+    return result;
 }
 
-template <class Abi> 
-floatv<Abi> lgamma(floatv<Abi> x){
-  return static_simd_cast<floatv<Abi>>(lgamma(static_simd_cast<doublev<Abi>>(x)));
+template <class Abi>
+floatv<Abi> lgamma(floatv<Abi> x) {
+    constexpr size_t size = floatv<Abi>::size();
+    floatv<Abi> result;
+    for (size_t i = 0; i < size; ++i) {
+        result[i] = ::lgammaf(x[i]);
+    }
+    return result;
 }
-
 
 /* lgammal special value */
 #define NRASY 12
