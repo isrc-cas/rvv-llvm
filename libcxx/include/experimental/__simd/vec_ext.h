@@ -14,6 +14,11 @@
 #include <experimental/__simd/scalar.h>
 #include <experimental/__simd/utility.h>
 #include <functional>
+#if defined(__x86_64__) || defined(_M_X64) || defined(__i386) || defined(_M_IX86)
+#include <immintrin.h> // For SSE2
+#elif defined(__ARM_NEON) || defined(__ARM_NEON__)
+#include <arm_neon.h>  // For NEON
+#endif
 
 _LIBCPP_BEGIN_NAMESPACE_EXPERIMENTAL_SIMD_ABI
 
@@ -67,18 +72,72 @@ struct __simd_traits<_Tp, simd_abi::__vec_ext<_Np>> {
     return __generate_init(std::forward<_Generator>(__g), std::make_index_sequence<_Np>());
   }
 
+// SSE2 和 NEON 的 SIMD 加载优化
   template <class _Up>
-  static _LIBCPP_HIDE_FROM_ABI void __load(_Simd& __s, const _Up* __mem) noexcept {
-    // TODO: Optimize with intrinsics
-    for (size_t __i = 0; __i < _Np; __i++)
-      __s.__data[__i] = static_cast<_Tp>(__mem[__i]);
+  static void __load(_Simd& __s, const _Up* __mem) noexcept {
+    if constexpr (std::is_same<_Tp, float>::value && (_Np == 4)) {
+#if defined(__SSE2__)
+      // 使用 SSE 加载 4 个 float
+      __s.__data = _mm_loadu_ps(reinterpret_cast<const float*>(__mem));
+#elif defined(__ARM_NEON)
+      // 使用 NEON 加载 4 个 float
+      __s.__data = vld1q_f32(reinterpret_cast<const float*>(__mem));
+#else
+      // Fallback
+      for (size_t __i = 0; __i < _Np; ++__i)
+        __s.__data[__i] = static_cast<_Tp>(__mem[__i]);
+#endif
+    } else if constexpr (std::is_same<_Tp, int>::value && (_Np == 4)) {
+#if defined(__SSE2__)
+      // 使用 SSE 加载 4 个 int
+      __s.__data = _mm_loadu_si128(reinterpret_cast<const __m128i*>(__mem));
+#elif defined(__ARM_NEON)
+      // 使用 NEON 加载 4 个 int
+      __s.__data = vld1q_s32(reinterpret_cast<const int32_t*>(__mem));
+#else
+      // Fallback
+      for (size_t __i = 0; __i < _Np; ++__i)
+        __s.__data[__i] = static_cast<_Tp>(__mem[__i]);
+#endif
+    } else {
+      // Fallback for unsupported types
+      for (size_t __i = 0; __i < _Np; ++__i)
+        __s.__data[__i] = static_cast<_Tp>(__mem[__i]);
+    }
   }
 
+  // SSE2 和 NEON 的 SIMD 存储优化
   template <class _Up>
-  static _LIBCPP_HIDE_FROM_ABI void __store(_Simd __s, _Up* __mem) noexcept {
-    // TODO: Optimize with intrinsics
-    for (size_t __i = 0; __i < _Np; __i++)
-      __mem[__i] = static_cast<_Up>(__s.__data[__i]);
+  static void __store(const _Simd& __s, _Up* __mem) noexcept {
+    if constexpr (std::is_same<_Tp, float>::value && (_Np == 4)) {
+#if defined(__SSE2__)
+      // 使用 SSE 存储 4 个 float
+      _mm_storeu_ps(reinterpret_cast<float*>(__mem), __s.__data);
+#elif defined(__ARM_NEON)
+      // 使用 NEON 存储 4 个 float
+      vst1q_f32(reinterpret_cast<float*>(__mem), __s.__data);
+#else
+      // Fallback
+      for (size_t __i = 0; __i < _Np; ++__i)
+        __mem[__i] = static_cast<_Up>(__s.__data[__i]);
+#endif
+    } else if constexpr (std::is_same<_Tp, int>::value && (_Np == 4)) {
+#if defined(__SSE2__)
+      // 使用 SSE 存储 4 个 int
+      _mm_storeu_si128(reinterpret_cast<__m128i*>(__mem), __s.__data);
+#elif defined(__ARM_NEON)
+      // 使用 NEON 存储 4 个 int
+      vst1q_s32(reinterpret_cast<int32_t*>(__mem), __s.__data);
+#else
+      // Fallback
+      for (size_t __i = 0; __i < _Np; ++__i)
+        __mem[__i] = static_cast<_Up>(__s.__data[__i]);
+#endif
+    } else {
+      // Fallback for unsupported types
+      for (size_t __i = 0; __i < _Np; ++__i)
+        __mem[__i] = static_cast<_Up>(__s.__data[__i]);
+    }
   }
 
   static void __increment(_Simd& __s) noexcept { __s.__data = __s.__data + 1; }
